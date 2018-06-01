@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+    <TriggerPackage>
+        <TriggerGroup isActive="yes" isFolder="yes" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+            <name>Party</name>
+            <script></script>
+            <triggerType>0</triggerType>
+            <conditonLineDelta>0</conditonLineDelta>
+            <mStayOpen>0</mStayOpen>
+            <mCommand></mCommand>
+            <packageName></packageName>
+            <mFgColor>#ff0000</mFgColor>
+            <mBgColor>#ffff00</mBgColor>
+            <mSoundFile></mSoundFile>
+            <colorTriggerFgColor>#000000</colorTriggerFgColor>
+            <colorTriggerBgColor>#000000</colorTriggerBgColor>
+            <regexCodeList/>
+            <regexCodePropertyList/>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="yes" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Join Party</name>
+                <script>if Party.InParty ~= 1 then
+	Party.InParty = 1
+	echo(&quot;\n **Party Trigger activated**&quot;)
+	Party.PartyName = matches[2]
+	send(&quot;party join &quot;..Party.PartyName)
+	tempTimer(1.5,[[send(&quot;pline/wave&quot;)]])
+	Party.PlineName = Party.PartyName:gsub(&quot;^%l&quot;,string.upper,1)
+	echo(&quot;\n **You have auto-joined party &quot;..Party.PartyName..&quot;**\n&quot;)
+else
+	echo(&quot;Invitation to party &quot;..matches[2]..&quot; declined&quot;)
+	send(&quot;party decline &quot;..matches[2]..&quot; because Grimmer is already in a party&quot;)
+end</script>
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#00fffd</mFgColor>
+                <mBgColor>#fb00ff</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>You have 60 seconds to type 'party join (\w+)'</string>
+                    <string>You join party '(\w)'.</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>1</integer>
+                    <integer>1</integer>
+                </regexCodePropertyList>
+            </Trigger>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Leave Party</name>
+                <script>Party.InParty = 0
+Party.PartyLeader = 0
+Party.NoRepeat = 0
+Party.PlineName = &quot;&quot;
+Party.PartyName = &quot;&quot;
+echo(&quot;\nYou have left party &quot;..Party.PartyName)</script>
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#ff0000</mFgColor>
+                <mBgColor>#ffff00</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>You have been removed from your party by (\w*)</string>
+                    <string>You disband the party.</string>
+                    <string>You leave party '(\w*)'</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>1</integer>
+                    <integer>2</integer>
+                    <integer>1</integer>
+                </regexCodePropertyList>
+            </Trigger>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Form Party</name>
+                <script>Party.InParty = 1
+Party.PartyLeader = 1
+Party.NoRepeat = 0
+Party.PartyName = matches[2]
+Party.PlineName = Party.PartyName:gsub(&quot;^%l&quot;,string.upper,1)
+echo(&quot;\nParty Name is &quot;..Party.PartyName)
+echo(&quot;\nYou are the party leader&quot;)
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#ff0000</mFgColor>
+                <mBgColor>#ffff00</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>You form a party by the name of '(\w*)'</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>1</integer>
+                </regexCodePropertyList>
+            </Trigger>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Party Leader</name>
+                <script>Party.PartyLeader = 1
+Party.NoRepeat = 0
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#ff0000</mFgColor>
+                <mBgColor>#ffff00</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>You are now the leader of the party!</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>2</integer>
+                </regexCodePropertyList>
+            </Trigger>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Not Party Leader</name>
+                <script>Party.PartyLeader = 0</script>
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#ff0000</mFgColor>
+                <mBgColor>#ffff00</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>You abdicate the leadership of the party.</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>2</integer>
+                </regexCodePropertyList>
+            </Trigger>
+            <Trigger isActive="yes" isFolder="no" isTempTrigger="no" isMultiline="no" isPerlSlashGOption="no" isColorizerTrigger="no" isFilterTrigger="no" isSoundTrigger="no" isColorTrigger="no" isColorTriggerFg="no" isColorTriggerBg="no">
+                <name>Add to Party</name>
+                <script>local wiz_table = {&quot;larnen&quot;,&quot;azazel&quot;,&quot;stom&quot;,&quot;dval&quot;,&quot;kelda&quot;,&quot;eldge&quot;,&quot;moloch&quot;,&quot;prozac&quot;,&quot;jazz&quot;,&quot;eversor&quot;,&quot;handy&quot;,&quot;oriel&quot;,&quot;agrippa&quot;,&quot;usgreth&quot;,&quot;quark&quot;,&quot;gunnar&quot;,&quot;rosmerta&quot;,&quot;tess&quot;}
+if Party.NoRepeat == 0 then
+	if table.contains(wiz_table, matches[7]) then
+		send(&quot;pline don't be silly, they're a wiz!&quot;)
+		Party.NoRepeat = 1
+		tempTimer(10,[[Party.NoRepeat = 0]])
+	elseif Party.PartyLeader == 1 then
+		Party.PartyAdd = matches[7]
+		tempTimer(0.5,[[send(&quot;party add &quot;..Party.PartyAdd)]])
+		--in case you're tripped/asleep/or have any affect that stops you..
+		tempTimer(10,[[send(&quot;party add &quot;..Party.PartyAdd)]])
+		echo(&quot; ** You try to add &quot;..Party.PartyAdd..&quot; to the party **&quot;)
+	end
+end</script>
+                <triggerType>0</triggerType>
+                <conditonLineDelta>0</conditonLineDelta>
+                <mStayOpen>0</mStayOpen>
+                <mCommand></mCommand>
+                <packageName></packageName>
+                <mFgColor>#ff0000</mFgColor>
+                <mBgColor>#ffff00</mBgColor>
+                <mSoundFile></mSoundFile>
+                <colorTriggerFgColor>#000000</colorTriggerFgColor>
+                <colorTriggerBgColor>#000000</colorTriggerBgColor>
+                <regexCodeList>
+                    <string>(\[)(\w*)((\s*\w*)*)(\]) Grimmer add (\w*)</string>
+                    <string>(\[)(\w*)((\s*\w*)*)(\]) grimmer add (\w*)</string>
+                    <string>(\[)(\w*)((\s*\w*)*)(\]) add (\w*)</string>
+                    <string>(\[)(\w*)((\s*\w*)*)(\]) add (\w*) pls</string>
+                </regexCodeList>
+                <regexCodePropertyList>
+                    <integer>1</integer>
+                    <integer>1</integer>
+                    <integer>1</integer>
+                    <integer>1</integer>
+                </regexCodePropertyList>
+            </Trigger>
+        </TriggerGroup>
+    </TriggerPackage>
+</MudletPackage>

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+    <ScriptPackage>
+        <ScriptGroup isActive="yes" isFolder="yes">
+            <name>EleChat</name>
+            <packageName>elechat_v2</packageName>
+            <script></script>
+            <eventHandlerList/>
+            <ScriptGroup isActive="yes" isFolder="yes">
+                <name>EleChat</name>
+                <packageName>gchat_v1</packageName>
+                <script></script>
+                <eventHandlerList/>
+                <Script isActive="yes" isFolder="no">
+                    <name>EleChat</name>
+                    <packageName></packageName>
+                    <script>EleChat = {
+--You can reasonably safely change this stuff
+	--The name of the line needs to match exactly with your window names.
+	channelmap = {
+		Party = &quot;Party&quot;,
+		Warmage = &quot;Guilds&quot;,
+		Druid = &quot;Guilds&quot;,
+		Fighter = &quot;Guilds&quot;,
+		Rogue = &quot;Guilds&quot;,
+		Monk = &quot;Guilds&quot;,
+		Ranger = &quot;Guilds&quot;,
+		Cleric = &quot;Guilds&quot;,
+		Necromancer = &quot;Guilds&quot;,
+		Valena = &quot;Other&quot;,
+		Aerdy = &quot;Other&quot;,
+		Drakenwood = &quot;Other&quot;,
+		Rosfarren = &quot;Other&quot;,
+		Newbie = &quot;Other&quot;,
+		Council = &quot;Other&quot;,
+		Honey = &quot;Other&quot;,
+		--Note the house line needs to be without the space in it
+		HouseValderi = &quot;Other&quot;
+	},
+		
+	channelcolour = {
+	--colours as follows: 'lua showColors(4)' on Mudlet CLI
+		Tell = &quot;&lt;firebrick&gt;&quot;, --note this works for replies as well
+		Party = &quot;&lt;royal_blue&gt;&quot;, --this will work for any party name IF you have Grimmer's party triggers
+		Warmage = &quot;&lt;red&gt;&quot;,
+		Druid = &quot;&quot;,
+		Fighter = &quot;&quot;,
+		Rogue = &quot;&quot;,
+		Monk = &quot;&quot;,
+		Ranger = &quot;&quot;,
+		Cleric = &quot;&lt;green&gt;&quot;,
+		Necromancer = &quot;&quot;,
+		Valena = &quot;&lt;sky_blue&gt;&quot;,
+		Aerdy = &quot;&quot;,
+		Drakenwood = &quot;&quot;,
+		Rosfarren = &quot;&quot;,
+		Newbie = &quot;&quot;,
+		Council = &quot;&quot;,
+		Honey = &quot;&quot;,
+		--Note the house line needs to be without the space in it
+		HouseValderi = &quot;&lt;yellow&gt;&quot;
+	},
+	
+--This is the main code, don't fuck around with it unless you understand it.
+
+gmcptell = function()
+	--set vars
+	local charname = gmcp.Char.Status.name
+	local chat = &quot;Tells&quot;
+	local msgtype = gmcp.Msg.Tell.type
+	local msgto = gmcp.Msg.Tell.to
+	local msgfrom = gmcp.Msg.Tell.from
+	local msg = gmcp.Msg.Tell.msg
+	local rawmsg = gmcp.Msg.Tell.rawmsg
+	local chancol = EleChat.channelcolour[&quot;Tell&quot;]
+	local msgoutput
+	local english
+	local timestamp = getTime(true, demonnic.chat.config.timestamp)
+	
+	if msgtype == &quot;tell&quot; then
+		if msgto == charname then
+			english = msgfrom..&quot; tells you:&lt;light_gray&gt; &quot;
+		end
+		if msgfrom == charname then
+			english = &quot;You tell &quot;..msgto..&quot;:&lt;light_gray&gt; &quot;
+		end
+	end
+	
+	if msgtype == &quot;reply to&quot; then
+		if msgto == charname then
+			english = msgfrom..&quot; replies to you:&lt;light_gray&gt; &quot;
+		end
+		if msgfrom == charname then
+			english = &quot;You reply to &quot;..msgto..&quot;:&lt;light_gray&gt; &quot;
+		end
+	end
+	
+	if demonnic.chat.config.timestamp then
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		msgoutput = chancol..timestamp..&quot; &quot;..english
+		demonnic.chat:cecho(chat,msgoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	else
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		msgoutput = chancol..english
+		demonnic.chat:cecho(chat,msgoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	end
+	
+	--Now GAG it from the main window.
+	moveCursor(0,getLineCount()-1)
+	deleteLine()
+end,
+
+gmcpchat = function()
+--define vars
+	local debug = false --set to true for spam to screen (debug purposes)
+	--get the gmcp.Msg.Chat info
+	local rawmsg = gmcp.Msg.Chat.rawmsg
+	local emote = gmcp.Msg.Chat.emote
+	local who = gmcp.Msg.Chat.who
+	local msg = gmcp.Msg.Chat.msg
+	local channel = gmcp.Msg.Chat.channel
+	local formatoutput
+	local chat
+	local chancol
+	
+	if debug then
+		echo(&quot;\nEmote: &quot;..emote..&quot;, Who:&quot;..who..&quot;, Channel &quot;..channel..&quot;, Msg&quot;..msg..&quot;\n&quot;)
+	end
+
+		--create timestamp
+	local timestamp = getTime(true, demonnic.chat.config.timestamp)
+	if debug then
+		echo(&quot;Variable 'timestamp' = &quot;..timestamp..&quot;\n&quot;)
+	end
+	
+		--Find the channel name, remove any space from them
+	if channel == Party.PlineName then
+		--get the YATCO output window
+		chat = EleChat.channelmap[&quot;Party&quot;] or demonnic.chat.config.Alltab
+	else
+		chat = EleChat.channelmap[channel:gsub(&quot; &quot;,&quot;&quot;)] or demonnic.chat.config.Alltab
+	end
+	
+	if debug then
+		echo(&quot;\nVariable 'chat' = &quot;..chat..&quot;\n&quot;)
+	end
+
+		--get line colour
+	if channel == Party.PlineName then
+  	chancol = EleChat.channelcolour[&quot;Party&quot;]
+	else
+		chancol = EleChat.channelcolour[gmcp.Msg.Chat.channel:gsub(&quot; &quot;,&quot;&quot;)]
+	end
+	
+	if debug then
+		echo(&quot;Variable 'chancol' = &quot;..chancol..&quot;\n&quot;)
+	end
+	
+	if demonnic.chat.config.timestamp then
+		if emote == 0 then
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..who..&quot;\]&lt;light_gray&gt; &quot;
+		elseif emote == 2 then
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..&quot;\]&lt;light_gray&gt; &quot;
+		else
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..&quot;\]&lt;light_gray&gt;&quot;..who..&quot; &quot;
+		end
+
+		if debug then
+			echo(&quot;\nVariable 'formatoutput' = &quot;..formatoutput)
+		end
+
+		demonnic.chat:cecho(chat,formatoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	else
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		if emote == 0 then
+			local formatoutput = chancol..&quot;\[&quot;..channel..who..&quot;\]&lt;light_gray&gt; &quot;
+		else
+			local formatoutput = chancol..&quot;\[&quot;..channel..&quot;\]&lt;light_gray&gt;&quot;..who..&quot; &quot;
+		end
+		
+		if debug then
+			echo(&quot;\nVariable 'formatoutput' = &quot;..formatoutput)
+		end
+
+		demonnic.chat:cecho(chat,formatoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	end
+	--Now GAG it from the main window.
+	moveCursor(0,getLineCount()-1)
+	deleteLine()
+end
+
+}</script>
+                    <eventHandlerList/>
+                    <Script isActive="yes" isFolder="no">
+                        <name>EleChat.gmcpchat</name>
+                        <packageName></packageName>
+                        <script>--Meant to be blank, just an event handler</script>
+                        <eventHandlerList>
+                            <string>gmcp.Msg.Chat</string>
+                        </eventHandlerList>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>EleChat.gmcptell</name>
+                        <packageName></packageName>
+                        <script>--Meant to be blank, just an event handler</script>
+                        <eventHandlerList>
+                            <string>gmcp.Msg.Tell</string>
+                        </eventHandlerList>
+                    </Script>
+                </Script>
+            </ScriptGroup>
+        </ScriptGroup>
+    </ScriptPackage>
+</MudletPackage>
