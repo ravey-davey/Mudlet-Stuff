@@ -1,0 +1,4334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+    <ScriptPackage>
+        <ScriptGroup isActive="yes" isFolder="yes">
+            <name>ele-ui-0.1.6</name>
+            <packageName>ele-ui-0.1.4</packageName>
+            <script></script>
+            <eventHandlerList/>
+            <ScriptGroup isActive="yes" isFolder="yes">
+                <name>ui</name>
+                <packageName>ele-ui-0.1.3</packageName>
+                <script></script>
+                <eventHandlerList/>
+                <Script isActive="yes" isFolder="no">
+                    <name>Utils</name>
+                    <packageName></packageName>
+                    <script>ui = ui or {}
+ui.utils = ui.utils or {}
+
+
+function ui.utils:capitalize(str)
+  return (str:gsub(&quot;^%l&quot;, string.upper))
+end
+
+-- returns a value between 0 and 1 that represents where val lies between min and max
+-- (will reverse min and max if min &gt; max)
+function ui.utils:lerp(min, max, val)
+	if min &gt; max then
+		minTmp = min
+		min = max
+		max = minTmp
+	end
+	local true_min = 0
+	local true_max = max - min
+
+	local true_val = val - min
+	
+	if true_val &lt; true_min then true_val = true_min end
+	if true_val &gt; true_max then true_val = true_max end
+	
+	return true_val / true_max
+end</script>
+                    <eventHandlerList/>
+                </Script>
+                <Script isActive="yes" isFolder="no">
+                    <name>UIComponents</name>
+                    <packageName></packageName>
+                    <script>ui = ui or {}
+ui.components = ui.components or {}
+
+if not ui.components.is_loaded then
+
+  ui.components.label_full = {
+  	prefix = 'label_full__',
+  	x = 0,
+  	y = 0,
+  	width = '100%',
+  	height = '100%',
+    element = nil
+  }
+	ui.components.label_full.__index = ui.components.label_full
+	
+	  ui.components.label_list_item = {
+    prefix = 'label_list_item__',
+    x = 0,
+    y = 0,
+    width = '100%',
+    height = 20,
+    element = nil,
+    message = ''
+  }
+	ui.components.label_list_item.__index = ui.components.label_list_item
+	
+	ui.components.header = {
+		prefix = 'header__',
+		x = 0,
+		y = 0,
+		width = '100%',
+		height = ui.components.label_list_item.height
+	}
+	ui.components.header.__index = ui.components.header
+	
+  function ui.components.label_full:new(name, parent_container, cons)
+    local label = {}
+  	setmetatable(label, ui.components.label_full)
+  	local cons = cons or {}
+  	cons.name = self.prefix .. name
+  	cons.x = cons.x or self.x
+  	cons.y = cons.y or self.y
+  	cons.width = cons.width or self.width
+  	cons.height = cons.height or self.height
+    label.element = Geyser.Label:new(cons, parent_container)
+		label.element:setStyleSheet([[
+			background-color: #111;
+		]])
+  	return label
+  end
+	
+	function ui.components.header:new(name, text, parent_container)
+		local cons = ui.components.header
+		local header = Geyser.Label:new({
+			name = cons.prefix .. name,
+			x = cons.x,
+			y = cons.y,
+			width = cons.width,
+			height = cons.height,
+		}, parent_container)
+		header:setFontSize(10)
+		header:setStyleSheet([[
+			background-color: #111;
+			padding-left: 4px;
+			qproperty-alignment: 'AlignVCenter';
+		]])
+		header:echo(text)
+		return header
+	end
+	
+  function ui.components.label_list_item:new(cons, parent_container)
+    local item = {}
+    setmetatable(item, ui.components.label_list_item)
+    item.name = self.prefix .. cons.name
+    item.x = cons.x or self.x
+    item.y = cons.y or self.y
+    item.width = cons.width or self.width
+    item.height = cons.height or self.height
+    item.element = Geyser.Label:new({
+      name = item.name,
+      x = item.x,
+      y = item.y,
+      width = item.width,
+      height = item.height .. 'pt'
+    }, parent_container)
+		item.element:setFontSize(10)
+		item.element:setStyleSheet([[
+			qproperty-alignment: 'AlignVCenter';
+			background-color: #111;
+			padding-left: 8px;
+		]])
+    return item
+  end
+
+  ui.components.label_list = {
+		prefix = 'label_list__'
+  }
+	ui.components.label_list.__index = ui.components.label_list
+	
+  function ui.components.label_list:clear()
+    if self.items then
+      for i,item in pairs(self.items) do
+        item.element:echo(&quot;&quot;)
+      end
+    end
+  end
+
+  function ui.components.label_list:refresh(messages)
+		messages = messages or {}
+    self:clear()
+    for i, message in pairs(messages) do
+      if self.items and self.items[i] then
+        self.items[i].element:echo(message)
+      end
+    end
+  end
+
+  function ui.components.label_list:new(length, name, messages, parent_container, cons)
+    local list = {
+			items = {}
+		}
+		local cons = cons or {}
+    setmetatable(list, ui.components.label_list)
+    list.container = ui.components.label_full:new(name, parent_container)
+		list.header = ui.components.header:new(name, name, parent_container)
+		list.items_container = ui.components.label_full:new(name .. '_items', parent_container, {
+			x = cons.x or 0,
+			y = cons.y or ui.components.label_list_item.height,
+			height = cons.height,
+			width = cons.width
+		})
+		local prefix = self.prefix
+    for i = 1,length do
+			local ref = ui.components.label_list_item:new({
+        name = prefix .. name .. '__item_' .. i,
+        y = ((i - 1) * ui.components.label_list_item.height) .. 'pt'
+      }, list.items_container.element)
+      table.insert(list.items, i, ref)
+    end
+    self:refresh(messages)
+		return list
+  end
+
+  ui.components.is_loaded = true
+end</script>
+                    <eventHandlerList/>
+                </Script>
+                <Script isActive="yes" isFolder="no">
+                    <name>LayoutController</name>
+                    <packageName></packageName>
+                    <script>-- ui = ui or {}
+-- ui.layout = ui.layout or {}
+--
+-- if not ui.layout.is_loaded then
+--
+--   --- constraints ---
+--
+--   ui.layout.cons = {}
+--
+--   ui.layout.cons.main_console_container = {
+--     name = 'main_console_container',
+--   	x = '20%',
+--   	y = '12.5%',
+--   	width = '60%',
+--     height = '62.5%'
+--   }
+--
+--   ui.layout.cons.left_and_right_containers = {
+--   	y = 0,
+--   	width = '20%',
+--     height = '100%'
+--   }
+--
+-- 	--- left container ---
+--
+--   ui.layout.cons.left_container = {
+--     name = 'left_container',
+--   	x = 0,
+--   	y = 0,
+--   	width = ui.layout.cons.left_and_right_containers.width,
+--     height = ui.layout.cons.left_and_right_containers.height
+--   }
+--
+-- 	ui.layout.cons.left_window = {
+--     name = 'left_window',
+--     x = 0,
+--   	y = 0,
+--     width = '100%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.status_panel = {
+--   	name = 'status_panel',
+--   	x = 0,
+--   	y = 0,
+--   	width = '100%',
+--   	height = '25%'
+--   }
+--
+-- 	ui.layout.cons.limbs_panel = {
+-- 		name = 'limbs_panel',
+-- 		x = 0,
+-- 		y = '25%',
+-- 		width = '100%',
+-- 		height = '50%'
+-- 	}
+--
+--   ui.layout.cons.buffs_panel = {
+--     name = 'buffs_panel',
+--     x = 0,
+--     y = '75%',
+-- 		width = '100%',
+--   	height = '25%'
+--   }
+--
+-- 	--- right container ---
+--
+--   ui.layout.cons.right_container = {
+--     name = 'right_container',
+--   	x = '-20%',
+--   	y = 0,
+--   	width = ui.layout.cons.left_and_right_containers.width,
+--     height = ui.layout.cons.left_and_right_containers.height
+--   }
+--
+--   ui.layout.cons.right_window = {
+--     name = 'right_window',
+--     x = 0,
+--   	y = 0,
+--     width = '100%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.room_panel = {
+-- 		name = 'room_panel',
+-- 		x = 0,
+-- 		y = 0,
+-- 		width = '100%',
+-- 		height = '25%'
+-- 	}
+--
+-- 	ui.layout.cons.inventory_panel = {
+-- 		name = 'inventory_panel',
+-- 		x = 0,
+-- 		y = '25%',
+-- 		width = '100%',
+-- 		height = '75%'
+-- 	}
+--
+-- 	ui.layout.cons.inventory_on_person_panel = {
+-- 		name = 'inventory_on_person_panel',
+--     x = 0,
+--     y = 0,
+--     width = '100%',
+--     height = '45%'
+-- 	}
+--
+-- 	ui.layout.cons.inventory_in_bags_panel = {
+--     name = 'inventory_in_bags_panel',
+--     x = 0,
+--     y = '45%',
+--     width = '100%',
+--     height = '55%'
+-- 	}
+--
+-- 	--- top container ---
+--
+-- 	ui.layout.cons.top_container = {
+-- 		name = 'top_container',
+-- 		x = '20%',
+-- 		y = 0,
+-- 		width = '60%',
+-- 		height = '12.5%'
+-- 	}
+--
+--   ui.layout.cons.top_window = {
+--     name = 'top_window',
+--     x = 0,
+--   	y = 0,
+--     width = '100%',
+--   	height = '100%'
+--   }
+--
+--   ui.layout.cons.stats_panel = {
+--   	name = 'stats_panel',
+--   	x = 0,
+--   	y = 0,
+--   	width = '33.33%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.skills_panel = {
+--   	name = 'skills_panel',
+--   	x = '33.33%',
+--   	y = 0,
+--   	width = '66.67%',
+--   	height = '100%'
+--   }
+--
+-- 	--- bottom container ---
+--
+-- 	ui.layout.cons.bottom_container = {
+-- 		name = 'bottom_container',
+-- 		x = '20%',
+-- 		y = '75%',
+-- 		width = '60%',
+-- 		height = '25%'
+-- 	}
+--
+-- 	ui.layout.cons.bottom_window = {
+--     name = 'bottom_window',
+--     x = 0,
+--   	y = 0,
+--     width = '100%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.vitals_panel = {
+--     name = 'vitals_panel',
+--     x = 0,
+--     y = 0,
+-- 		width = '33.33%',
+--   	height = '50%',
+--   }
+--
+-- 	ui.layout.cons.target_panel = {
+-- 		name = 'target_panel',
+-- 		x = '33.33%',
+-- 		y = 0,
+-- 		width = '33.33%',
+-- 		height = '50%'
+-- 	}
+--
+-- 	ui.layout.cons.target_status_panel = {
+--   	name = 'target_status_panel',
+--   	x = 0,
+--   	y = 0,
+--   	width = '50%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.target_cast_panel = {
+--   	name = 'target_cast_panel',
+--   	x = '50%',
+--   	y = 0,
+--   	width = '50%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.hunters_attackers_panel = {
+--   	name = 'hunters_attackers_panel',
+--   	x = '66.66%',
+--   	y = 0,
+--   	width = '33.34%',
+--   	height = '50%'
+--   }
+--
+-- 	ui.layout.cons.hunters_panel = {
+--   	name = 'hunters_panel',
+--   	x = 0,
+--   	y = 0,
+--   	width = '50%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.attackers_panel = {
+--   	name = 'attackers_panel',
+--   	x = '50%',
+--   	y = 0,
+--   	width = '50%',
+--   	height = '100%'
+--   }
+--
+-- 	ui.layout.cons.party_panel = {
+-- 		name = 'party_panel',
+-- 		x = 0,
+-- 		y = '50%',
+-- 		width = '100%',
+-- 		height = '50%'
+-- 	}
+--
+--   --- styles ---
+--
+--   --- shared styles ---
+--
+--   ui.layout.styles = {
+--     main_background_color = '#111',
+--     main_border_style = '1px solid #FFF'
+--   }
+--
+--   --- stylesheets ---
+--
+--   ui.layout.stylesheets = {
+--
+--     --- left window ---
+--
+--   	left_window = [[
+--     	background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+--     status_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     limbs_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     buffs_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     --- right window ---
+--
+--   	right_window = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+--     room_panel = [[
+--       background-color: #111;
+-- 			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     inventory_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--     ]],
+--
+--     inventory_on_person_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     inventory_in_bags_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     --- top window ---
+--
+-- 	  top_window = [[
+--     	background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+--     stats_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     skills_panel = [[
+--       background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+--     ]],
+--
+--     --- bottom window ---
+--
+--   	bottom_window = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+--   	vitals_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]],
+--
+--     target_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+--     target_status_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+-- 			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]],
+--
+--     target_cast_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+-- 			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]],
+--
+-- 		hunters_attackers_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--   	]],
+--
+-- 		hunters_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]],
+--
+-- 		attackers_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]],
+--
+-- 		party_panel = [[
+--   		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+--       border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+-- 			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+--   	]]
+--   }
+--
+--   --- refs ---
+--
+--   --- main console window ---
+--
+--   ui.layout.main_console_container = Geyser.Container:new(ui.layout.cons.main_console_container)
+--
+--   --- left container ---
+--
+--   ui.layout.left_container = Geyser.Container:new(ui.layout.cons.left_container)
+--
+--   ui.layout.left_window = Geyser.Label:new(ui.layout.cons.left_window, ui.layout.left_container)
+--   ui.layout.left_window:setStyleSheet(ui.layout.stylesheets.left_window)
+--
+--   ui.layout.status_panel = Geyser.Label:new(ui.layout.cons.status_panel, ui.layout.left_window)
+--   ui.layout.status_panel:setStyleSheet(ui.layout.stylesheets.status_panel)
+--
+--   ui.layout.limbs_panel = Geyser.Label:new(ui.layout.cons.limbs_panel, ui.layout.left_window)
+--   ui.layout.limbs_panel:setStyleSheet(ui.layout.stylesheets.limbs_panel)
+--
+--   ui.layout.buffs_panel = Geyser.Label:new(ui.layout.cons.buffs_panel, ui.layout.left_window)
+--   ui.layout.buffs_panel:setStyleSheet(ui.layout.stylesheets.buffs_panel)
+--
+--   --- right container ---
+--
+--   ui.layout.right_container = Geyser.Container:new(ui.layout.cons.right_container)
+--
+--   ui.layout.right_window = Geyser.Label:new(ui.layout.cons.right_window, ui.layout.right_container)
+--   ui.layout.right_window:setStyleSheet(ui.layout.stylesheets.right_window)
+--
+-- 	ui.layout.room_panel = Geyser.Label:new(ui.layout.cons.room_panel, ui.layout.right_window)
+--   ui.layout.room_panel:setStyleSheet(ui.layout.stylesheets.room_panel)
+--
+-- 	ui.layout.inventory_panel = Geyser.Label:new(ui.layout.cons.inventory_panel, ui.layout.right_window)
+--   ui.layout.inventory_panel:setStyleSheet(ui.layout.stylesheets.inventory_panel)
+--
+-- 	ui.layout.inventory_on_person_panel = Geyser.Label:new(ui.layout.cons.inventory_on_person_panel, ui.layout.inventory_panel)
+--   ui.layout.inventory_on_person_panel:setStyleSheet(ui.layout.stylesheets.inventory_on_person_panel)
+--
+-- 	ui.layout.inventory_in_bags_panel = Geyser.Label:new(ui.layout.cons.inventory_in_bags_panel, ui.layout.inventory_panel)
+--   ui.layout.inventory_in_bags_panel:setStyleSheet(ui.layout.stylesheets.inventory_in_bags_panel)
+--
+--   --- top container ---
+--
+--   ui.layout.top_container = Geyser.Container:new(ui.layout.cons.top_container)
+--   ui.layout.top_window = Geyser.Label:new(ui.layout.cons.top_window, ui.layout.top_container)
+--   ui.layout.top_window:setStyleSheet(ui.layout.stylesheets.top_window)
+--
+--   ui.layout.stats_panel = Geyser.Label:new(ui.layout.cons.stats_panel, ui.layout.top_window)
+--   ui.layout.stats_panel:setStyleSheet(ui.layout.stylesheets.stats_panel)
+--
+--   ui.layout.skills_panel = Geyser.Label:new(ui.layout.cons.skills_panel, ui.layout.top_window)
+--   ui.layout.skills_panel:setStyleSheet(ui.layout.stylesheets.skills_panel)
+--
+--   --- bottom container ---
+--
+--   ui.layout.bottom_container = Geyser.Container:new(ui.layout.cons.bottom_container)
+--
+--   ui.layout.bottom_window = Geyser.Label:new(ui.layout.cons.bottom_window, ui.layout.bottom_container)
+--   ui.layout.bottom_window:setStyleSheet(ui.layout.stylesheets.bottom_window)
+--
+--   ui.layout.vitals_panel = Geyser.Label:new(ui.layout.cons.vitals_panel, ui.layout.bottom_window)
+--   ui.layout.vitals_panel:setStyleSheet(ui.layout.stylesheets.vitals_panel)
+--
+--   ui.layout.target_panel = Geyser.Label:new(ui.layout.cons.target_panel, ui.layout.bottom_window)
+--   ui.layout.target_panel:setStyleSheet(ui.layout.stylesheets.target_panel)
+--
+--   ui.layout.target_status_panel = Geyser.Label:new(ui.layout.cons.target_status_panel, ui.layout.target_panel)
+--   ui.layout.target_status_panel:setStyleSheet(ui.layout.stylesheets.target_status_panel)
+--
+--   ui.layout.target_cast_panel = Geyser.Label:new(ui.layout.cons.target_cast_panel, ui.layout.target_panel)
+--   ui.layout.target_cast_panel:setStyleSheet(ui.layout.stylesheets.target_cast_panel)
+--
+--   ui.layout.hunters_attackers_panel = Geyser.Label:new(ui.layout.cons.hunters_attackers_panel, ui.layout.bottom_window)
+--   ui.layout.hunters_attackers_panel:setStyleSheet(ui.layout.stylesheets.hunters_attackers_panel)
+--
+--   ui.layout.hunters_panel = Geyser.Label:new(ui.layout.cons.hunters_panel, ui.layout.hunters_attackers_panel)
+--   ui.layout.hunters_panel:setStyleSheet(ui.layout.stylesheets.hunters_panel)
+--
+--   ui.layout.attackers_panel = Geyser.Label:new(ui.layout.cons.attackers_panel, ui.layout.hunters_attackers_panel)
+--   ui.layout.attackers_panel:setStyleSheet(ui.layout.stylesheets.attackers_panel)
+--
+--   ui.layout.party_panel = Geyser.Label:new(ui.layout.cons.party_panel, ui.layout.bottom_window)
+--   ui.layout.party_panel:setStyleSheet(ui.layout.stylesheets.party_panel)
+--
+--   function ui.layout:set_main_borders()
+--   	local w,h = getMainWindowSize()
+--   	if( w ~= ui.layout.window_width) then
+--   		ui.layout.window_width = w
+--   		local cx = ui.layout.main_console_container:get_x()
+-- 			local cw = ui.layout.main_console_container:get_width()
+-- 			setBorderLeft(tonumber(cx) + 15) -- 15px left padding
+--   		setBorderRight(tonumber(w-cx-cw))
+--  		end
+--  		if (h ~= ui.layout.window_height) then
+-- 			ui.layout.window_height = h
+--   		local cy = ui.layout.main_console_container:get_y()
+-- 			local ch = ui.layout.main_console_container:get_height()
+-- 			setBorderTop(tonumber(cy))
+-- 			setBorderBottom(tonumber(h-cy-ch))
+--   	end
+--   end
+--
+--   -- sysWindowResizeEvent handler
+--   function ui.layout:update_content( event, x, y )
+--   	if( ui.eventtimer ) then killTimer( ui.eventtimer ) end
+--   	ui.eventtimer = tempTimer(0, [[killTimer( 'ui.eventtimer' ) ui.layout:set_main_borders()]])
+--   end
+--
+--   -- register our function as an event handler
+-- 	ui.layout:set_main_borders()
+--   registerAnonymousEventHandler('sysWindowResizeEvent', 'ui.layout:update_content')
+--   ui.layout.is_loaded = true
+-- end
+</script>
+                    <eventHandlerList/>
+                </Script>
+                <ScriptGroup isActive="yes" isFolder="yes">
+                    <name>Views</name>
+                    <packageName></packageName>
+                    <script>-------------------------------------------------
+--         Put your Lua functions here.        --
+--                                             --
+-- Note that you can also use external Scripts --
+-------------------------------------------------
+</script>
+                    <eventHandlerList/>
+                    <Script isActive="yes" isFolder="no">
+                        <name>Styles</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.styles = {
+  panel_padding = '10pt',
+	main_border = '1px solid #FFF',
+	main_background_color = '#111'
+}
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>PartyPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.party_panel = ui.views.party_panel or {
+  refs = {
+		party_member_panels = {},
+		party_member_name_labels = {},
+		party_member_slots = {},
+		health_bars = {},
+		mana_bars = {},
+		stamina_bars = {}
+	}
+}
+
+function ui.views.party_panel:create()
+	if not ui.views.party_panel.refs.container_label then
+    -- create container
+    ui.views.party_panel:create_container()
+
+    -- create slots
+    ui.views.party_panel:create_party_member_slots()
+
+		-- create panels
+		ui.views.party_panel:create_party_member_panels()
+
+		-- create vitals bars
+		ui.views.party_panel:create_vitals_bars()
+	end
+end
+
+function ui.views.party_panel:create_container()
+  local container_cons = {
+    name = 'party_panel_inner_container',
+    height = '100%',
+    width = '100%',
+    x = 0,
+    y = 0
+  }
+  local container_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+  ]]
+  self.refs.container_label = Geyser.Label:new(container_cons, ui.layout.party_panel)
+  self.refs.container_label:setStyleSheet(container_style)
+end
+
+function ui.views.party_panel:create_party_member_slots()
+  -- set cons for party_member slots
+  local member_slot_cons = {
+    prefix = 'party_members_slot',
+    x = 0,
+    y = 0,
+    height = '10%',
+    width = '100%'
+  }
+
+  -- set stylesheet for party_member slots
+  local member_slot_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    border-top: 1px solid #FFF;
+    border-left: 1px solid #FFF;
+    border-right: 1px solid #FFF;
+  ]]
+
+  local last_member_slot_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+		border-top: 1px solid #FFF;
+		border-left: 1px solid #FFF;
+		border-right: 1px solid #FFF;
+  ]]
+
+  for i = 0,9 do
+    local y_percent = i * 10
+    local label = Geyser.Label:new({
+      name = member_slot_cons.prefix .. i,
+      x = member_slot_cons.x,
+      y = y_percent .. '%',
+      height = member_slot_cons.height,
+      width = member_slot_cons.width
+    }, self.refs.container_label)
+    label:setStyleSheet(i == 9 and last_member_slot_style or member_slot_style)
+    self.refs.party_member_slots[i] = label
+  end
+end
+
+
+function ui.views.party_panel:create_party_member_panels()
+	local member_panel_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+	]]
+
+	local member_name_style = [[
+  		background-color: ]] .. ui.views.styles.main_background_color .. [[;
+      qproperty-alignment: 'AlignVCenter';
+		]]
+	for i = 0,9 do
+		local member_panel_cons = {
+			name = 'party_member_panel__' .. i,
+			height = '90%',
+			width = '90%',
+			x = '5%',
+			y = '5%'
+		}
+		local member_panel_label = Geyser.Label:new(member_panel_cons, ui.views.party_panel.refs.party_member_slots[i])
+		member_panel_label:hide()
+		member_panel_label:setStyleSheet(member_panel_style);
+		ui.views.party_panel.refs.party_member_panels[i] = member_panel_label
+
+		local member_name_cons = {
+			x = 0,
+			y = 0,
+			width = '20%',
+			height = '100%',
+			name = 'member_name_label__' .. i
+		}
+
+		local member_name_label = Geyser.Label:new(member_name_cons, member_panel_label)
+		member_name_label:setStyleSheet(member_name_style)
+		member_name_label:setFontSize(10)
+		ui.views.party_panel.refs.party_member_name_labels[i] = member_name_label
+	end
+end
+
+function ui.views.party_panel:create_vitals_bars()
+	for i = 0, 9 do
+		local cons = {
+			x = '25%',
+  		width = '70%',
+  		height = '33%'
+  	}
+
+  	local health_bar_style = [[
+  	]]
+
+  	local health_bar = Geyser.Gauge:new({
+  		x = cons.x,
+  		y = 0,
+  		height = cons.height,
+  		width = cons.width,
+  		name = 'party_panel_health_bar__' .. i
+		}, ui.views.party_panel.refs.party_member_panels[i])
+		health_bar:hide()
+		health_bar:setValue(0, 100, 'HP')
+		health_bar.front:setStyleSheet([[
+			padding-left: 3px;
+  		background-color: #F00;
+		]])
+		health_bar.back:setStyleSheet([[
+			padding-left: 3px;
+  		background-color: #500;
+		]])
+		ui.views.party_panel.refs.health_bars[i] = health_bar
+
+		local mana_bar = Geyser.Gauge:new({
+  		x = cons.x,
+  		y = '33.3%',
+  		height = cons.height,
+  		width = cons.width,
+  		name = 'party_panel_mana_bar__' .. i
+		}, ui.views.party_panel.refs.party_member_panels[i])
+		mana_bar:hide()
+		mana_bar:setValue(0, 100, 'MP')
+		mana_bar.front:setStyleSheet([[
+			padding-left: 3px;
+  		background-color: #00F;
+		]])
+		mana_bar.back:setStyleSheet([[
+			padding-left: 3px;
+  		background-color: #005;
+		]])
+		ui.views.party_panel.refs.mana_bars[i] = mana_bar
+
+		local stamina_bar = Geyser.Gauge:new({
+  		x = cons.x,
+  		y = '66.6%',
+  		height = cons.height,
+  		width = cons.width,
+  		name = 'party_panel_stamina_bar__' .. i
+		}, ui.views.party_panel.refs.party_member_panels[i])
+		stamina_bar:hide()
+		stamina_bar:setValue(0, 100, 'SP')
+		stamina_bar.front:setStyleSheet([[
+			padding-left: 3px;
+  		background-color: #0F0;
+		]])
+		stamina_bar.back:setStyleSheet([[
+		  padding-left: 3px;
+  		background-color: #050;
+		]])
+		ui.views.party_panel.refs.stamina_bars[i] = stamina_bar
+	end
+end
+
+function ui.views.party_panel:clear()
+  -- hide vitals vitals_bars
+  ui.views.party_panel:clear_party_vitals_bars()
+
+  -- hide char panels
+  ui.views.party_panel:clear_party_member_panels()
+
+  -- hide slots
+  ui.views.party_panel:clear_party_member_slots()
+end
+
+function ui.views.party_panel:clear_party_vitals_bars()
+
+end
+
+function ui.views.party_panel:clear_party_member_panels()
+end
+
+function ui.views.party_panel:clear_party_member_slots()
+end
+
+function ui.views.party_panel:render(state)
+
+  -- create party panel if it doesn't exist
+	if not ui.views.party_panel.refs.container_label then
+		ui.views.party_panel.create()
+	end
+
+	local index = 0
+	for i,v in pairs(state.members) do
+		ui.views.party_panel.refs.party_member_panels[index]:show()
+		ui.views.party_panel.refs.party_member_name_labels[index]:echo([[&lt;center&gt;]]..ui.utils:capitalize(i)..[[&lt;/center&gt;]])
+		ui.views.party_panel.refs.health_bars[index]:setValue(v.hp * 100, 100, 'HP')
+		ui.views.party_panel.refs.health_bars[index]:show()
+		ui.views.party_panel.refs.mana_bars[index]:setValue(v.mp * 100, 100, 'MP')
+		ui.views.party_panel.refs.mana_bars[index]:show()
+		ui.views.party_panel.refs.stamina_bars[index]:setValue(v.sp * 100, 100, 'SP')
+		ui.views.party_panel.refs.stamina_bars[index]:show()
+		index = index + 1
+	end
+
+	-- clear the rest
+	for i = index, 9 do
+		ui.views.party_panel.refs.party_member_name_labels[i]:echo('')
+		ui.views.party_panel.refs.health_bars[index]:setValue(0, 100, 'HP')
+		ui.views.party_panel.refs.mana_bars[index]:setValue(0, 100, 'MP')
+		ui.views.party_panel.refs.stamina_bars[index]:setValue(0, 100, 'SP')
+		ui.views.party_panel.refs.party_member_panels[i]:hide()
+	end
+
+  -- update vitals bars
+
+end
+
+
+ui.views.party_panel:create()
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>HuntersAttackersPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.hunters_attackers_panel = ui.views.hunters_attackers_panel or {
+  refs = {}
+}
+
+function ui.views.hunters_attackers_panel:create()
+  --- create wrap ---
+  local hunters_attackers_panel_cons = {
+    name = 'hunters_attackers_panel__view',
+    x = '5%',
+    y = '5%',
+    width = '90%',
+    height = '90%'
+  }
+  local hunters_attackers_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    width: 100%;
+  ]]
+  self.refs.hunters_container = Geyser.Label:new(hunters_attackers_panel_cons, ui.layout.hunters_panel)
+  self.refs.attackers_container = Geyser.Label:new(hunters_attackers_panel_cons, ui.layout.attackers_panel)
+  self.refs.hunters_container:setStyleSheet(hunters_attackers_panel_style)
+  self.refs.attackers_container:setStyleSheet(hunters_attackers_panel_style)
+
+  --- create tables for each skill tree ---
+  local tree_container_cons = {
+    width = '100%',
+    height = '75%',
+		x = 0,
+    y = 0
+  }
+
+  local tree_container_style = [[
+    background-color: #111;
+  ]]
+
+
+  local tree_header_cons = {
+    width = '100%',
+    height = '25%',
+		x = 0,
+    y = 0
+  }
+
+  local tree_header_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  local tree_item_cons = {
+    height = '15%',
+    width = '50%'
+  }
+
+  local tree_item_style = [[
+    background-color: #111;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  self.refs.tree_containers = {}
+  self.refs.tree_headers = {}
+  self.refs.tree_items = {
+    hunters = {},
+    attackers = {}
+  }
+
+  for i,v in pairs({ 'hunters', 'attackers' }) do
+    self.refs.tree_containers[v] = Geyser.Label:new({
+      name = 'hunters_attackers_tree_label__' .. v,
+      x = tree_container_cons.x,
+      y = tree_container_cons.y,
+      height = tree_container_cons.height,
+      width = tree_container_cons.width,
+    }, self.refs[v .. '_container'])
+    self.refs.tree_containers[v]:setStyleSheet(tree_container_style)
+
+    -- make a header for each tree --
+    self.refs.tree_headers[v] = Geyser.Label:new({
+      name = 'skill_tree_header__' .. v,
+      x = tree_header_cons.x,
+      y = tree_header_cons.y,
+      height = tree_header_cons.height,
+      width = tree_header_cons.width,
+    }, self.refs.tree_containers[v])
+    self.refs.tree_headers[v]:setStyleSheet(tree_header_style)
+    self.refs.tree_headers[v]:setFontSize(10)
+    self.refs.tree_headers[v]:echo([[&lt;center&gt;]].. ui.utils:capitalize(v)..[[&lt;/center]])
+
+    for i = 1,10 do
+			local y = ((i &lt; 3) and 0) or
+								((i &lt; 5) and 1) or
+								((i &lt; 7) and 2) or
+								((i &lt; 9) and 3) or 4
+      local label = Geyser.Label:new({
+        name = 'hunters_attackers_tree_item__' .. v .. '__' .. i,
+        x = ((i % 2 == 0) and '50%') or 0,
+        y = ((y * 15) + 25) .. '%',
+        width = tree_item_cons.width,
+        height = tree_item_cons.height
+      }, self.refs.tree_containers[v])
+      label:setStyleSheet(tree_item_style)
+      label:setFontSize(8)
+			self.refs.tree_items[v][i] = label
+    end
+
+  end
+
+end
+
+function ui.views.hunters_attackers_panel:clear()
+	for _,v in pairs({'hunters', 'attackers'}) do
+		for i2, v2 in ipairs(self.refs.tree_items[v]) do
+			self.refs.tree_items[v][i2]:echo('')
+		end
+	end
+end
+
+function ui.views.hunters_attackers_panel:render(state)
+  --- create a view instance if there isn't one ---
+  if not self.refs.container then
+    self:create()
+  else
+    self:clear()
+  end
+
+	local counter = 1
+	for i,v in pairs(state) do
+		for i2, v2 in pairs(v) do
+			self.refs.tree_items[i][counter]:echo([[&lt;center&gt;]].. ui.utils:capitalize(v2) ..[[&lt;/center&gt;]])
+			counter = counter + 1
+		end
+			counter = 1
+	end
+end
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>TargetPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.target_panel = ui.views.target_panel or {
+  refs = {}
+}
+
+function ui.views.target_panel:create()
+  --- create wrap ---
+  local target_status_panel_cons = {
+    name = 'target_status_panel__view',
+    x = '5%',
+    y = '5%',
+    width = '90%',
+    height = '90%'
+  }
+  local target_status_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    width: 100%;
+  ]]
+  ui.views.target_panel.refs.target_status_container = Geyser.Label:new(target_status_panel_cons, ui.layout.target_status_panel)
+  ui.views.target_panel.refs.target_status_container:setStyleSheet(target_status_panel_style)
+
+  local target_cast_panel_cons = {
+    name = 'target_cast_panel__view',
+    x = '5%',
+    y = '5%',
+    width = '90%',
+    height = '90%'
+  }
+  local target_cast_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    width: 100%;
+  ]]
+  ui.views.target_panel.refs.target_cast_container = Geyser.Label:new(target_cast_panel_cons, ui.layout.target_cast_panel)
+  ui.views.target_panel.refs.target_cast_container:setStyleSheet(target_cast_panel_style)
+
+  --- create stats header ---
+  local target_panel_header_cons = {
+    x = 0,
+    y = 0,
+    width = '100%',
+    height = '25%'
+  }
+
+  local target_panel_header_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+		qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  ui.views.target_panel.refs.target_status_header = Geyser.Label:new(target_panel_header_cons, ui.views.target_panel.refs.target_status_container)
+  ui.views.target_panel.refs.target_status_header:setStyleSheet(target_panel_header_style)
+  ui.views.target_panel.refs.target_status_header:setFontSize(10)
+  ui.views.target_panel.refs.target_status_header:echo('&lt;center&gt;Target.Status&lt;/center&gt;')
+
+  ui.views.target_panel.refs.target_cast_header = Geyser.Label:new(target_panel_header_cons, ui.views.target_panel.refs.target_cast_container)
+  ui.views.target_panel.refs.target_cast_header:setStyleSheet(target_panel_header_style)
+  ui.views.target_panel.refs.target_cast_header:setFontSize(10)
+  ui.views.target_panel.refs.target_cast_header:echo('&lt;center&gt;Target.Cast&lt;/center&gt;')
+
+	--- create table for stats labels ---
+	local status_table_cons = {
+		x = 0,
+		y = '30%',
+		width = '45%',
+		height = '70%'
+	}
+
+	local status_table_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+	]]
+
+  ui.views.target_panel.refs.status_table = Geyser.Label:new(status_table_cons, ui.views.target_panel.refs.target_status_container)
+  ui.views.target_panel.refs.status_table:setStyleSheet(status_table_style)
+
+	--- create individual stats labels ---
+  ui.views.target_panel.refs.status_labels = {}
+  local status_label_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+  ]]
+	ui.views.target_panel.refs.status_labels.name_label = Geyser.Label:new({ x=0, y=0, height='20%', width='100%'}, ui.views.target_panel.refs.status_table)
+	ui.views.target_panel.refs.status_labels.level_label = Geyser.Label:new({ x=0, y='20%', height='20%', width='100%'}, ui.views.target_panel.refs.status_table)
+	ui.views.target_panel.refs.status_labels.target_label = Geyser.Label:new({ x=0, y='40%', height='20%', width='100%'}, ui.views.target_panel.refs.status_table)
+
+  for stat, label in pairs(ui.views.target_panel.refs.status_labels) do
+    label:setStyleSheet(status_label_style)
+    label:setFontSize(6)
+  end
+
+  local vitals_container_cons = {
+    x = '50%',
+    y = '30%',
+    width = '50%',
+    height = '70%'
+  }
+
+  local vitals_container_style = [[
+    background-color: ]] .. ui.views.styles.main_background_color .. [[;
+  ]]
+
+  ui.views.target_panel.refs.vitals_container = Geyser.Label:new(vitals_container_cons, ui.views.target_panel.refs.target_status_container)
+  ui.views.target_panel.refs.vitals_container:setStyleSheet(vitals_container_style)
+
+  local vital_bar_cons = {
+    x = 0,
+    width = '90%',
+    height = '20%'
+  }
+
+  local health_bar = Geyser.Gauge:new({
+    x = vital_bar_cons.x,
+    y = 0,
+    height = vital_bar_cons.height,
+    width = vital_bar_cons.width,
+    name = 'target_panel__health_bar'
+  }, ui.views.target_panel.refs.vitals_container)
+  health_bar:hide()
+  health_bar:setValue(0, 100, 'HP')
+  health_bar.front:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #F00;
+  ]])
+  health_bar.back:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #500;
+  ]])
+  ui.views.target_panel.refs.health_bar = health_bar
+
+  local mana_bar = Geyser.Gauge:new({
+    x = vital_bar_cons.x,
+    y = '20%',
+    height = vital_bar_cons.height,
+    width = vital_bar_cons.width,
+    name = 'target_panel__mana_bar'
+  }, ui.views.target_panel.refs.vitals_container)
+  mana_bar:hide()
+  mana_bar:setValue(0, 100, 'MP')
+  mana_bar.front:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #00F;
+  ]])
+  mana_bar.back:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #005;
+  ]])
+  ui.views.target_panel.refs.mana_bar = mana_bar
+
+  local stamina_bar = Geyser.Gauge:new({
+    x = vital_bar_cons.x,
+    y = '40%',
+    height = vital_bar_cons.height,
+    width = vital_bar_cons.width,
+    name = 'target_panel__stamina_bar'
+  }, ui.views.target_panel.refs.vitals_container)
+  stamina_bar:hide()
+  stamina_bar:setValue(0, 100, 'SP')
+  stamina_bar.front:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #0F0;
+  ]])
+  stamina_bar.back:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #050;
+  ]])
+  ui.views.target_panel.refs.stamina_bar = stamina_bar
+
+  local target_cast_name_label_cons = {
+    name = 'target_cast_name_label',
+    x = 0,
+    y = '30%',
+    height = '20%',
+    width = '45%'
+  }
+
+  local target_cast_name_label_style = [[
+		background-color: ]] .. ui.views.styles.main_background_color .. [[;
+    qproperty-alignment: 'AlignVCenter';
+	]]
+
+  target_cast_name_label = Geyser.Label:new(target_cast_name_label_cons, ui.views.target_panel.refs.target_cast_container)
+  target_cast_name_label:setStyleSheet(target_cast_name_label_style)
+  ui.views.target_panel.refs.target_cast_name_label = target_cast_name_label
+
+  local cast_duration_bar = Geyser.Gauge:new({
+    x = '50%',
+    y = '30%',
+    height = '20%',
+    width = '50%',
+    name = 'target_cast_duration_bar'
+  }, ui.views.target_panel.refs.target_cast_container)
+  cast_duration_bar:hide()
+  cast_duration_bar:setValue(0, 100)
+  cast_duration_bar.front:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #F00;
+  ]])
+  cast_duration_bar.back:setStyleSheet([[
+    padding-left: 3px;
+    background-color: #000;
+  ]])
+  ui.views.target_panel.refs.target_cast_duration_bar = cast_duration_bar
+end
+
+function ui.views.target_panel:clear()
+  ui.views.target_panel.refs.status_labels.name_label:echo('')
+  ui.views.target_panel.refs.status_labels.level_label:echo('')
+  ui.views.target_panel.refs.status_labels.target_label:echo('')
+  ui.views.target_panel.refs.health_bar:setValue(0, 100)
+  ui.views.target_panel.refs.health_bar:hide()
+  ui.views.target_panel.refs.mana_bar:setValue(0, 100)
+  ui.views.target_panel.refs.mana_bar:hide()
+  ui.views.target_panel.refs.stamina_bar:setValue(0, 100)
+  ui.views.target_panel.refs.stamina_bar:hide()
+	ui.views.target_panel.refs.status_table:hide()
+	ui.views.target_panel.refs.vitals_container:hide()
+  self:clear_casting()
+end
+
+function ui.views.target_panel:clear_casting()
+	ui.views.target_panel.refs.target_cast_name_label:echo('')
+  ui.views.target_panel.refs.target_cast_duration_bar:setValue(0, 100)
+	ui.views.target_panel.refs.target_cast_name_label:hide()
+	ui.views.target_panel.refs.target_cast_duration_bar:hide()
+end
+
+function ui.views.target_panel:render(state)
+  --- create a view instance if there isn't one ---
+  if not ui.views.target_panel.refs.target_status_container then
+    self:create()
+  end
+
+  --- parse gmcp state into view properties ---
+  local props = {
+    name = state.name or nil,
+    level = state.level or '',
+    target = state.targetOfTarget or '',
+    hp = state.hp or 1,
+    mp = state.mp or 1,
+    sp = state.sp or 1,
+    casting = state.casting or nil
+  }
+  --- render view properties ---
+  if not props.name then
+    self:clear()
+  else
+ 	 	ui.views.target_panel.refs.target_status_container:show()
+ 	 	ui.views.target_panel.refs.target_cast_container:show()
+    ui.views.target_panel.refs.status_labels.name_label:echo('Name: '..props.name)
+  	ui.views.target_panel.refs.status_labels.level_label:echo('Level: '..props.level)
+  	ui.views.target_panel.refs.status_labels.target_label:echo('Target: '..props.target)
+    ui.views.target_panel.refs.health_bar:setValue(props.hp * 100, 100, 'HP')
+    ui.views.target_panel.refs.health_bar:show()
+    ui.views.target_panel.refs.mana_bar:setValue(props.mp * 100, 100, 'MP')
+    ui.views.target_panel.refs.mana_bar:show()
+    ui.views.target_panel.refs.stamina_bar:setValue(props.sp * 100, 100, 'SP')
+    ui.views.target_panel.refs.stamina_bar:show()
+
+    if not props.casting then
+      self:clear_casting()
+    else
+      ui.views.target_panel.refs.target_cast_name_label:show()
+      ui.views.target_panel.refs.target_cast_name_label:echo('Spell: '..props.casting.name)
+      ui.views.target_panel.refs.target_cast_duration_bar:show()
+      local duration_value = ui.utils:lerp(0, props.casting.casttime, props.casting.time_left)
+			ui.views.target_panel.refs.target_cast_duration_bar:show()
+      ui.views.target_panel.refs.target_cast_duration_bar:setValue(duration_value * 100, 100, props.casting.cast_time)
+    end
+  end
+end
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>PopupTriggerPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.popup_trigger_panel = ui.views.popup_trigger_panel or {
+  refs = {}
+}
+
+ui.views.popup_trigger_panel.cons = {
+	popup_trigger_container = {
+		name = 'popup_trigger_container',
+		x = '5%',
+		y = '5%',
+		height = '90%',
+		width = '90%'
+	},
+
+	status_popup_trigger = {
+		name = 'status_popup_trigger',
+		x = 0,
+		y = 0,
+		height = '100%',
+		width = '28%'
+	},
+
+	bag_popup_trigger = {
+		name = 'bag_popup_trigger',
+		x = '36%',
+		y = 0,
+		height = '100%',
+		width = '28%'
+	},
+
+	worn_wielded_popup_trigger = {
+		name = 'worn_wielded_popup_trigger',
+		x = '72%',
+		y = 0,
+		height = '100%',
+		width = '28%'
+	},
+
+	popup_window = {
+  	name = 'popup_window',
+  	x = 0,
+  	y = '20%',
+  	width = '100%',
+  	height = '75%'
+	},
+
+	status_popup_window = {
+		name = 'status_popup_window',
+		x = 0,
+		y = 0,
+		width = '100%',
+		height = '100%'
+	},
+
+	bag_popup_window = {
+		name = 'bag_popup_window',
+		x = 0,
+		y = 0,
+		width = '100%',
+		height = '100%'
+	},
+
+	worn_wielded_popup_window = {
+		name = 'worn_wielded_popup_window',
+		x = 0,
+		y = 0,
+		width = '100%',
+		height = '100%'
+	},
+}
+
+ui.views.popup_trigger_panel.style = {
+	popup_trigger_container = [[
+	  	background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			padding: 5px;
+	]],
+
+	status_popup_trigger = [[
+	  	background-color: green;
+			margin: 2px;
+	]],
+
+	bag_popup_trigger = [[
+	  	background-color: orange;
+			margin: 2px;
+	]],
+
+	worn_wielded_popup_trigger = [[
+	  	background-color: red;
+			margin: 2px;
+	]],
+
+	popup_window = [[
+		padding: 5px;
+		border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+	]],
+
+	status_popup_window = [[
+		background-color: green;
+		border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+	]],
+
+	bag_popup_window = [[
+		background-color: orange;
+		border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+	]],
+
+	worn_wielded_popup_window = [[
+		background-color: red;
+		border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+		border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+	]],
+
+}
+
+local is_test_window_showing = false;
+
+function ui.views.popup_trigger_panel:toggle_popup_window(window_ref)
+	if not window_ref.is_showing then
+		ui.views.popup_trigger_panel:show_window(window_ref)
+	else
+		ui.views.popup_trigger_panel:hide_window(window_ref)
+	end
+end
+
+function ui.views.popup_trigger_panel.toggle_status_popup()
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.bag_popup_window)
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.worn_wielded_popup_window)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.popup_trigger_panel.refs.status_popup_window)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.status_panel.refs.container)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.stats_panel.refs.container)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.skills_panel.refs.container)
+end
+
+function ui.views.popup_trigger_panel.toggle_bag_popup()
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.status_popup_window)
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.worn_wielded_popup_window)
+	ui.views.popup_trigger_panel:hide_window(ui.views.status_panel.refs.container)
+	ui.views.popup_trigger_panel:hide_window(ui.views.stats_panel.refs.container)
+	ui.views.popup_trigger_panel:hide_window(ui.views.skills_panel.refs.container)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.popup_trigger_panel.refs.bag_popup_window)
+end
+
+function ui.views.popup_trigger_panel.toggle_worn_wielded_popup()
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.bag_popup_window)
+	ui.views.popup_trigger_panel:hide_window(ui.views.popup_trigger_panel.refs.status_popup_window)
+	ui.views.popup_trigger_panel:hide_window(ui.views.status_panel.refs.container)
+	ui.views.popup_trigger_panel:hide_window(ui.views.stats_panel.refs.container)
+	ui.views.popup_trigger_panel:hide_window(ui.views.skills_panel.refs.container)
+	ui.views.popup_trigger_panel:toggle_popup_window(ui.views.popup_trigger_panel.refs.worn_wielded_popup_window)
+end
+
+function ui.views.popup_trigger_panel:create()
+	ui.views.popup_trigger_panel:create_popup_trigger_container()
+	ui.views.popup_trigger_panel:create_popup_window()
+	ui.views.popup_trigger_panel:create_status_popup()
+	ui.views.popup_trigger_panel:create_bag_popup()
+	ui.views.popup_trigger_panel:create_worn_wielded_popup()
+end
+
+function ui.views.popup_trigger_panel:create_popup_trigger_container()
+	ui.views.popup_trigger_panel.refs.popup_trigger_container = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.popup_trigger_container,
+		ui.layout.popup_trigger_panel
+	)
+	ui.views.popup_trigger_panel.refs.popup_trigger_container:setStyleSheet(ui.views.popup_trigger_panel.style.popup_trigger_container)
+end
+
+function ui.views.popup_trigger_panel:create_popup_window()
+	ui.views.popup_trigger_panel.refs.popup_window = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.popup_window,
+		ui.layout.right_window
+	)
+	ui.views.popup_trigger_panel.refs.popup_window:setStyleSheet(
+		ui.views.popup_trigger_panel.style.popup_window
+	)
+	ui.views.popup_trigger_panel.refs.popup_window:hide()
+end
+
+function ui.views.popup_trigger_panel:create_status_popup()
+	-- create status popup trigger
+	ui.views.popup_trigger_panel.refs.status_popup_trigger = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.status_popup_trigger,
+		ui.views.popup_trigger_panel.refs.popup_trigger_container
+	)
+	ui.views.popup_trigger_panel.refs.status_popup_trigger:setStyleSheet(ui.views.popup_trigger_panel.style.status_popup_trigger)
+
+	-- create status popup window
+	ui.views.popup_trigger_panel.refs.status_popup_window = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.status_popup_window,
+		ui.views.popup_trigger_panel.refs.popup_window
+	)
+	ui.views.popup_trigger_panel.refs.status_popup_window:setStyleSheet(ui.views.popup_trigger_panel.style.status_popup_window)
+	ui.views.popup_trigger_panel.refs.status_popup_window.is_showing = false;
+	ui.views.popup_trigger_panel.refs.status_popup_window:hide()
+
+	-- bind click handler
+	setLabelClickCallback(ui.views.popup_trigger_panel.cons.status_popup_trigger.name, 'ui.views.popup_trigger_panel.toggle_status_popup')
+end
+
+function ui.views.popup_trigger_panel:create_bag_popup()
+	-- create status popup trigger
+	ui.views.popup_trigger_panel.refs.bag_popup_trigger = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.bag_popup_trigger,
+		ui.views.popup_trigger_panel.refs.popup_trigger_container
+	)
+	ui.views.popup_trigger_panel.refs.bag_popup_trigger:setStyleSheet(ui.views.popup_trigger_panel.style.bag_popup_trigger)
+
+	-- create status popup window
+	ui.views.popup_trigger_panel.refs.bag_popup_window = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.bag_popup_window,
+		ui.views.popup_trigger_panel.refs.popup_window
+	)
+	ui.views.popup_trigger_panel.refs.bag_popup_window:setStyleSheet(ui.views.popup_trigger_panel.style.bag_popup_window)
+	ui.views.popup_trigger_panel.refs.bag_popup_window.is_showing = false;
+	ui.views.popup_trigger_panel.refs.bag_popup_window:hide()
+
+	-- bind click handler
+	setLabelClickCallback(ui.views.popup_trigger_panel.cons.bag_popup_trigger.name, 'ui.views.popup_trigger_panel.toggle_bag_popup')
+end
+
+function ui.views.popup_trigger_panel:create_worn_wielded_popup()
+	-- create status popup trigger
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_trigger = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.worn_wielded_popup_trigger,
+		ui.views.popup_trigger_panel.refs.popup_trigger_container
+	)
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_trigger:setStyleSheet(ui.views.popup_trigger_panel.style.worn_wielded_popup_trigger)
+
+	-- create status popup window
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_window = Geyser.Label:new(
+		ui.views.popup_trigger_panel.cons.worn_wielded_popup_window,
+		ui.views.popup_trigger_panel.refs.popup_window
+	)
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_window:setStyleSheet(ui.views.popup_trigger_panel.style.worn_wielded_popup_window)
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_window.is_showing = false;
+	ui.views.popup_trigger_panel.refs.worn_wielded_popup_window:hide()
+
+	-- bind click handler
+	setLabelClickCallback(ui.views.popup_trigger_panel.cons.worn_wielded_popup_trigger.name, 'ui.views.popup_trigger_panel.toggle_worn_wielded_popup')
+end
+
+function ui.views.popup_trigger_panel:hide_window(window_ref)
+	window_ref:hide()
+	window_ref.is_showing = false
+end
+
+function ui.views.popup_trigger_panel:show_window(window_ref)
+	window_ref:show()
+	window_ref.is_showing = true
+end
+
+ui.views.popup_trigger_panel:create()
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>StatusPanel</name>
+                        <packageName></packageName>
+                        <script>
+ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.status_panel = ui.views.status_panel or {
+  refs = {}
+}
+
+function ui.views.status_panel:create()
+
+  --- create wrap ---
+
+  local status_panel_cons = {
+    name = 'status_panel__view',
+    x = 0,
+    y = 0,
+    width = '100%',
+    height = '20%'
+  }
+  local status_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+		border-left: ]] .. ui.views.styles.main_border .. [[;
+		border-top: ]] .. ui.views.styles.main_border .. [[;
+		border-right: ]] .. ui.views.styles.main_border .. [[;
+    background-color: green;
+    width: 100%;
+  ]]
+  self.refs.container = Geyser.Label:new(status_panel_cons, ui.views.popup_trigger_panel.refs.status_popup_window)
+  self.refs.container:setStyleSheet(status_panel_style)
+
+  --- create name label ---
+
+  local name_label_cons = {
+    name = 'status_panel__name',
+    x = '10%',
+    y = '20%',
+    width = '80%',
+    height = '20%'
+  }
+  local name_label_style = [[
+    background-color: green;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+  self.refs.name_label = Geyser.Label:new(name_label_cons, self.refs.container)
+  self.refs.name_label:setStyleSheet(name_label_style)
+  self.refs.name_label:setFontSize(16)
+
+  --- create level/class label ---
+
+  local class_label_cons =  {
+    name = 'status_panel__class',
+    x = '10%',
+    y = '40%',
+    width = '80%',
+    height = '20%'
+  }
+  local class_label_style = [[
+    background-color: green;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+  self.refs.class_label = Geyser.Label:new(class_label_cons, self.refs.container)
+  self.refs.class_label:setStyleSheet(class_label_style)
+  self.refs.class_label:setFontSize(12)
+
+  --- create gener/race label ---
+  local race_label_cons =  {
+    name = 'status_panel__race',
+    x = '10%',
+    y = '60%',
+    width = '80%',
+    height = '20%'
+  }
+  local race_label_style = [[
+    background-color: green;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+  self.refs.race_label = Geyser.Label:new(race_label_cons, self.refs.container)
+  self.refs.race_label:setStyleSheet(race_label_style)
+  self.refs.race_label:setFontSize(10)
+end
+
+function ui.views.status_panel:clear()
+  -- self.refs.name_label:echo('')
+  -- self.refs.class_label:echo('')
+  -- self.refs.race_label:echo('')
+end
+
+function ui.views.status_panel:render(state)
+  --- create a view instance if there isn't one ---
+  if not self.refs.container then
+    self:create()
+  else 
+    self:clear()
+  end
+
+  --- parse state into view properties ---
+  local primary_class, secondary_class = unpack(state.class or {'', ''})
+  local props = {
+    race = ui.utils:capitalize(state.race or &quot;&quot;),
+    fullname = state.fullname or &quot;&quot;,
+    level = state.level or &quot;&quot;,
+    gender = ui.utils:capitalize(state.gender or &quot;&quot;),
+    class = ui.utils:capitalize(primary_class) ..
+      (secondary_class and &quot;/&quot; .. ui.utils:capitalize(secondary_class))
+  }
+  --- render view properties ---
+  self.refs.name_label:echo([[&lt;center&gt;]]..props.fullname..[[&lt;/center&gt;]])
+  self.refs.class_label:echo([[&lt;center&gt;Level ]]..props.level..[[ ]]..props.class..[[&lt;/center&gt;]])
+  self.refs.race_label:echo([[&lt;center&gt;]]..props.gender..[[ ]]..props.race..[[&lt;/center&gt;]])
+	self.refs.container:hide() -- this is in a popup, so don't show it yet
+end
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>StatsPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.stats_panel = ui.views.stats_panel or {
+  refs = {}
+}
+
+function ui.views.stats_panel:create()
+  --- create wrap ---
+  local stats_panel_cons = {
+    name = 'stats_panel__view',
+    x = 0,
+    y = '20%',
+    width = '100%',
+    height = '15%'
+  }
+	
+  local stats_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+		border-left: ]] .. ui.views.styles.main_border .. [[;
+		border-right: ]] .. ui.views.styles.main_border .. [[;
+    background-color: green;
+    width: 100%;
+  ]]
+	
+  self.refs.container = Geyser.Label:new(stats_panel_cons, ui.views.popup_trigger_panel.refs.status_popup_window)
+  self.refs.container:setStyleSheet(stats_panel_style)
+
+  --- create stats header ---
+  local stats_panel_header_cons = {
+    x = '5%',
+    y = 0,
+    width = '90%',
+    height = '25%'
+  }
+
+  local stats_panel_header_style = [[
+    background-color: green;
+		qproperty-alignment: 'AlignVCenter';
+  ]]
+  
+  self.refs.header = Geyser.Label:new(stats_panel_header_cons, self.refs.container)
+  self.refs.header:setStyleSheet(stats_panel_header_style)
+  self.refs.header:setFontSize(10)
+  self.refs.header:echo('&lt;center&gt;Stats&lt;/center&gt;')
+  
+	--- create table for stats labels ---
+	local stats_table_cons = {
+		x = '5%',
+		y = '30%',
+		width = '90%',
+		height = '50%'
+	}
+	
+	local stats_table_style = [[
+    background-color: green;
+	]]
+
+  self.refs.stats_table = Geyser.Label:new(stats_table_cons, self.refs.container)
+  self.refs.stats_table:setStyleSheet(stats_table_style)
+  
+	--- create individual stats labels ---
+  self.refs.stat_labels = {}
+  local stat_label_style = [[
+    background-color: green;
+  ]]
+	self.refs.stat_labels.str_label = Geyser.Label:new({ x=0, y=0, height='50%', width='33.33%'}, self.refs.stats_table)
+	self.refs.stat_labels.dex_label = Geyser.Label:new({ x=0, y='50%', height='50%', width='33.33%'}, self.refs.stats_table)
+	self.refs.stat_labels.con_label = Geyser.Label:new({ x='33.33%', y=0, height='50%', width='33.33%'}, self.refs.stats_table)
+	self.refs.stat_labels.int_label = Geyser.Label:new({ x='33.33%', y='50%', height='50%', width='33.33%'}, self.refs.stats_table)
+	self.refs.stat_labels.wis_label = Geyser.Label:new({ x='66.66%', y=0, height='50%', width='33.33%'}, self.refs.stats_table)
+	self.refs.stat_labels.cha_label = Geyser.Label:new({ x='66.66%', y='50%', height='50%', width='33.33%'}, self.refs.stats_table)
+
+  for stat, label in pairs(self.refs.stat_labels) do
+    label:setStyleSheet(stat_label_style)
+    label:setFontSize(12)
+  end
+
+end
+
+function ui.views.stats_panel:clear()
+  -- self.refs.name_label:echo('')
+  -- self.refs.class_label:echo('')
+  -- self.refs.race_label:echo('')
+end
+
+function ui.views.stats_panel:render(state)
+  --- create a view instance if there isn't one ---
+  if not self.refs.container then
+    self:create()
+  else 
+    self:clear()
+  end
+
+  --- parse gmcp state into view properties ---
+  local props = {
+    str = state.str or '',
+    dex = state.dex or '',
+    con = state.con or '',
+    int = state.int or '',
+    wis = state.wis or '',
+    cha = state.cha or '',
+  }
+
+  --- render view properties ---
+  self.refs.stat_labels.str_label:echo([[&lt;center&gt;Str: ]]..props.str..[[&lt;/center&gt;]])
+  self.refs.stat_labels.dex_label:echo([[&lt;center&gt;Dex: ]]..props.dex..[[&lt;/center&gt;]])
+  self.refs.stat_labels.con_label:echo([[&lt;center&gt;Con: ]]..props.con..[[&lt;/center&gt;]])
+  self.refs.stat_labels.int_label:echo([[&lt;center&gt;Int: ]]..props.int..[[&lt;/center&gt;]])
+  self.refs.stat_labels.wis_label:echo([[&lt;center&gt;Wis: ]]..props.wis..[[&lt;/center&gt;]])
+  self.refs.stat_labels.cha_label:echo([[&lt;center&gt;Cha: ]]..props.cha..[[&lt;/center&gt;]])
+	
+	self.refs.container:hide()
+end
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>SkillsPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.skills_panel = ui.views.skills_panel or {
+  refs = {}
+}
+
+function ui.views.skills_panel:create()
+  --- create wrap ---
+  local skills_panel_cons = {
+    name = 'skills_panel__view',
+    x = '2.5%',
+    y = '35%',
+    width = '95%',
+    height = '30%'
+  }
+	
+  local skills_panel_style = [[
+    padding: ]] .. ui.views.styles.panel_padding .. [[;
+    background-color: green;
+  ]]
+	
+  self.refs.container = Geyser.Label:new(skills_panel_cons, ui.views.popup_trigger_panel.refs.status_popup_window)
+  self.refs.container:setStyleSheet(skills_panel_style)
+
+  --- create skills header ---
+  local skills_panel_header_cons = {
+    x = '5%',
+    y = 0,
+    width = '90%',
+    height = '25%'
+  }
+
+  local skills_panel_header_style = [[
+    background-color: green;
+		qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  self.refs.header = Geyser.Label:new(skills_panel_header_cons, self.refs.container)
+  self.refs.header:setStyleSheet(skills_panel_header_style)
+  self.refs.header:setFontSize(10)
+  self.refs.header:echo('&lt;center&gt;Skills&lt;/center&gt;')
+
+  --- create tables for each skill tree ---
+  local tree_container_cons = {
+    width = '50%',
+    height = '37.5%',
+  }
+
+  local tree_container_style = [[
+    background-color: green;
+  ]]
+
+
+  local tree_header_cons = {
+    width = '100%',
+    height = '37.5%',
+		x = 0,
+    y = 0
+  }
+
+  local tree_header_style = [[
+    background-color: green;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  local tree_item_cons = {
+    height = '15%',
+    width = '50%'
+  }
+
+  local tree_item_style = [[
+    background-color: green;
+    qproperty-alignment: 'AlignVCenter';
+  ]]
+
+  self.refs.tree_containers = {}
+  self.refs.tree_headers = {}
+  self.refs.tree_items = {
+    combat = {},
+    weapons = {},
+    magic = {},
+    other = {}
+  }
+
+  for i,v in pairs({ 'combat', 'weapons', 'magic', 'other'}) do
+		local x = i % 2 == 0 and 0 or '50%'
+    local y = i / 2 &lt;= 1 and '25%' or '62.5%' 
+		self.refs.tree_containers[v] = Geyser.Label:new({
+      name = 'skill_tree_label__' .. v,
+      x = x,
+      y = y,
+      height = tree_container_cons.height,
+      width = tree_container_cons.width,
+    }, self.refs.container)
+    self.refs.tree_containers[v]:setStyleSheet(tree_container_style)
+
+    -- make a header for each tree --
+    self.refs.tree_headers[v] = Geyser.Label:new({
+      name = 'skill_tree_header__' .. v,
+      x = tree_header_cons.x,
+      y = tree_header_cons.y,
+      height = tree_header_cons.height,
+      width = tree_header_cons.width,
+    }, self.refs.tree_containers[v])
+    self.refs.tree_headers[v]:setStyleSheet(tree_header_style)
+    self.refs.tree_headers[v]:setFontSize(8)
+    self.refs.tree_headers[v]:echo([[&lt;center&gt;]].. ui.utils:capitalize(v)..[[&lt;/center]])
+
+    for i = 1,10 do
+			local y = ((i &lt; 3) and 0) or
+								((i &lt; 5) and 1) or
+								((i &lt; 7) and 2) or
+								((i &lt; 9) and 3) or 4
+      local label = Geyser.Label:new({
+        name = 'skill_tree_item__' .. v .. '__' .. i,
+        x = ((i % 2 == 0) and '50%') or 0,
+        y = ((y * 15) + 25) .. '%',
+        width = tree_item_cons.width,
+        height = tree_item_cons.height
+      }, self.refs.tree_containers[v])
+      label:setStyleSheet(tree_item_style)
+      label:setFontSize(6)
+			self.refs.tree_items[v][i] = label
+    end
+
+  end
+
+end
+
+function ui.views.skills_panel:clear()
+	for _,v in pairs({'combat', 'weapons', 'magic', 'other'}) do
+		for i2, v2 in ipairs(self.refs.tree_items[v]) do
+			self.refs.tree_items[v][i2]:echo('')
+		end
+	end
+end
+
+function ui.views.skills_panel:render(state)
+  --- create a view instance if there isn't one ---
+  if not self.refs.container then
+    self:create()
+  else
+    self:clear()
+  end
+
+	local counter = 1
+	for i,v in pairs(state) do
+		for i2, v2 in pairs(v) do
+			self.refs.tree_items[i][counter]:echo(ui.utils:capitalize(i2) .. ': ' .. v2)
+			counter = counter + 1
+		end
+			counter = 1
+	end
+	self.refs.container:hide()
+end
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>MapPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.map_panel = ui.views.map_panel or {}
+
+ui.views.map_panel.view = Geyser.Mapper:new({
+  name = &quot;ui.views.map_panel.view&quot;,
+  x = 0, y = 0,
+  width = &quot;100%&quot;,
+  height = &quot;100%&quot;,
+},ui.layout.map_panel)</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>ChatPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.views = ui.views or {}
+
+ui.views.chat_panel = ui.views.chat_panel or {}
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                </ScriptGroup>
+                <ScriptGroup isActive="yes" isFolder="yes">
+                    <name>Controllers</name>
+                    <packageName></packageName>
+                    <script>-------------------------------------------------
+--         Put your Lua functions here.        --
+--                                             --
+-- Note that you can also use external Scripts --
+-------------------------------------------------
+</script>
+                    <eventHandlerList/>
+                    <Script isActive="yes" isFolder="no">
+                        <name>StatusPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.status_panel = ui.controllers.status_panel or {}
+ui.controllers.status_panel.state = ui.controllers.status_panel.state or {}
+
+function ui.controllers.status_panel:update_view()
+	ui.controllers.status_panel.state = gmcp.Char.Status
+	ui.views.status_panel:render(ui.controllers.status_panel.state)
+end
+
+registerAnonymousEventHandler(&quot;gmcp.Char.Status&quot;, &quot;ui.controllers.status_panel.update_view&quot;)</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>StatsPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.stats_panel = ui.controllers.stats_panel or {}
+
+ui.controllers.stats_panel.state = {
+	str = nil,
+	dex = nil,
+	con = nil,
+	int = nil,
+	wis = nil,
+	con = nil
+}
+
+function ui.controllers.stats_panel:update_view()
+	local new_state = gmcp.Char.Stats
+	ui.controllers.stats_panel.state.str = new_state.strength or ui.controllers.stats_panel.state.str
+	ui.controllers.stats_panel.state.dex = new_state.dexterity or ui.controllers.stats_panel.state.dex
+	ui.controllers.stats_panel.state.con = new_state.constitution or ui.controllers.stats_panel.state.con
+	ui.controllers.stats_panel.state.int = new_state.intelligence or ui.controllers.stats_panel.state.int
+	ui.controllers.stats_panel.state.wis = new_state.wisdom or ui.controllers.stats_panel.state.wis
+	ui.controllers.stats_panel.state.cha = new_state.charisma or ui.controllers.stats_panel.state.cha
+	ui.views.stats_panel:render(ui.controllers.stats_panel.state)
+end
+
+registerAnonymousEventHandler(&quot;gmcp.Char.Stats&quot;, &quot;ui.controllers.stats_panel.update_view&quot;)</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>SkillsPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.skills_panel = ui.controllers.skills_panel or {}
+
+ui.controllers.skills_panel.state = {
+  combat = {},
+  weapons = {},
+  magic = {},
+  other = {}
+}
+
+ui.controllers.skills_panel.combat = {
+  ARMOURY = 'armoury',
+  ATTACK = 'attack',
+  DEFENCE = 'defence',
+  DOUBLE_WIELDING = 'double wielding',
+  MELEE = 'melee',
+  SHIELDS = 'shields',
+}
+
+ui.controllers.skills_panel.weapons = {
+  BLADE = 'blade',
+  BLUNT = 'blunt',
+  KNIFE = 'knife',
+  POLEARM = 'polearm',
+  PROJECTILE = 'projectile',
+  STAFF = 'staff',
+  THROWN = 'thrown',
+  TWO_HANDED = 'two handed',
+  WHIP = 'whip',
+}
+
+ui.controllers.skills_panel.magic = {
+  CONJURING = 'conjuring',
+  FAITH = 'faith',
+  HEALING = 'healing',
+  INSIGHT = 'insight',
+  MAGIC_ATTACK = 'magic attack',
+  MAGIC_DEFENCE = 'magic defence',
+  WOODCRAFT = 'woodcraft'
+}
+
+ui.controllers.skills_panel.other = {
+  APPLICATION = 'application',
+  BARGAINING = 'bargaining',
+  CHI = 'chi',
+  MURDER = 'murder',
+  RIDING = 'riding',
+  SKULLDUGGERY = 'skullduggery',
+  STEALING = 'stealing',
+  STEALTH = 'stealth'
+}
+
+function ui.controllers.skills_panel:update_skill_tree(branch_name, new_state)
+  function to_string(value)
+    return (type(value) == 'table' and value[1]) or value 
+  end
+  for _,v in pairs(ui.controllers.skills_panel[branch_name] or {}) do
+    for i2,v2 in pairs(new_state or {}) do
+      if (v == to_string(i2)) then
+        if (v2 == 0 or v2 == '0') then 
+          ui.controllers.skills_panel.state[branch_name][i2] = nil
+        else
+          ui.controllers.skills_panel.state[branch_name][i2] = v2 
+        end 
+      end
+    end
+  end
+end
+
+function ui.controllers.skills_panel:update_view()
+	local new_state = gmcp.Char.Skills
+  ui.controllers.skills_panel:update_skill_tree('combat', new_state)
+  ui.controllers.skills_panel:update_skill_tree('weapons', new_state)
+  ui.controllers.skills_panel:update_skill_tree('magic', new_state)
+  ui.controllers.skills_panel:update_skill_tree('other', new_state)
+	-- echo('skills state: \n')
+	-- display(ui.controllers.skills_panel.state)
+	ui.views.skills_panel:render(ui.controllers.skills_panel.state)
+end
+
+function ui.controllers.skills_panel:reset()
+	ui.controllers.skills_panel.state = {
+		combat = {},
+		weapons = {},
+		magic = {},
+		other = {}
+	}
+	ui.views.skills_panel:render(ui.controllers.skills_panel.state)
+end
+
+registerAnonymousEventHandler(&quot;gmcp.Char.Skills&quot;, &quot;ui.controllers.skills_panel.update_view&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Char.Quit&quot;, &quot;ui.controllers.skills_panel.reset&quot;)</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>PartyPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.party_panel = ui.controllers.party_panel or {}
+
+ui.controllers.party_panel.state = ui.controllers.party_panel.state or {
+	members = {}
+}
+
+function ui.controllers.party_panel:update_view()
+	ui.views.party_panel:render(ui.controllers.party_panel.state)
+end
+
+function ui.controllers.party_panel:handle_members()
+  for i,v in pairs(gmcp.Party.Members) do
+    if ui.controllers.party_panel.state.members[i] == nil then
+      ui.controllers.party_panel.state.members[i] = v
+    end
+  end
+  for i,v in pairs(ui.controllers.party_panel.state.members) do
+    if gmcp.Party.Members[i] == nil then
+      ui.controllers.party_panel.state.members[i] = nil
+    end
+  end
+	ui.controllers.party_panel:update_view()
+end
+
+function ui.controllers.party_panel:handle_vitals()
+	for name,vitals in pairs(gmcp.Party.Vitals) do
+		if (ui.controllers.party_panel.state.members[name] ~= nil) then
+			for vital,value in pairs(vitals) do
+				ui.controllers.party_panel.state.members[name][vital] = value
+			end
+		end
+	end
+	ui.controllers.party_panel:update_view()
+end
+
+function ui.controllers.party_panel:reset()
+	ui.controllers.party_panel.state = {
+		members = {}
+	}
+	ui.controllers.party_panel:update_view()
+end
+
+function ui.controllers.party_panel:handle_my_vitals()
+	if gmcp.Char.Status then
+  	local my_name = string.lower(gmcp.Char.Status.name)
+  	if ui.controllers.party_panel.state.members[my_name] ~= nil then
+  		ui.controllers.party_panel.state.members[my_name].hp = ui.utils:lerp(0, gmcp.Char.Vitals.maxhp, gmcp.Char.Vitals.hp)
+  		ui.controllers.party_panel.state.members[my_name].mp = ui.utils:lerp(0, gmcp.Char.Vitals.maxmp, gmcp.Char.Vitals.mp)
+  		ui.controllers.party_panel.state.members[my_name].sp = ui.utils:lerp(0, gmcp.Char.Vitals.maxsp, gmcp.Char.Vitals.sp)
+  		ui.controllers.party_panel:update_view()
+  	end
+	end
+end
+
+registerAnonymousEventHandler(&quot;gmcp.Party.Members&quot;, &quot;ui.controllers.party_panel:handle_members&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Party.Vitals&quot;, &quot;ui.controllers.party_panel:handle_vitals&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Char.Vitals&quot;, &quot;ui.controllers.party_panel:handle_my_vitals&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Char.Quit&quot;, &quot;ui.controllers.party_panel:reset&quot;)
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>HuntersAttackersPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers.hunters_attackers_panel = ui.controllers.hunters_attackers_panel or {}
+
+ui.controllers.hunters_attackers_panel.state = {
+  hunters = {},
+  attackers = {}
+}
+
+function ui.controllers.hunters_attackers_panel:update_state()
+  local new_state = {
+    hunters = {},
+    attackers = {}
+  }
+  for i,v in pairs(gmcp.Char.Attackers.Hunt or {}) do
+    table.insert(new_state.hunters, v)
+  end
+  for i,v in pairs(gmcp.Char.Attackers.Attack or {}) do
+    table.insert(new_state.attackers, v)
+  end
+  ui.controllers.hunters_attackers_panel.state = new_state
+	ui.controllers.hunters_attackers_panel:update_view()
+end
+
+function ui.controllers.hunters_attackers_panel:update_view()
+  ui.views.hunters_attackers_panel:render(ui.controllers.hunters_attackers_panel.state)
+end
+
+function ui.controllers.hunters_attackers_panel:clear()
+	self.state = {}
+	self:render()
+end
+
+registerAnonymousEventHandler('gmcp.Char.Attackers', 'ui.controllers.hunters_attackers_panel:update_state')
+registerAnonymousEventHandler('gmcp.Char.Quit', 'ui.controllers.hunters_attackers_panel:clear')
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>BuffsPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.buffs_panel = ui.buffs_panel or {}
+
+ui.buffs_panel.current_buffs = {}
+
+ui.buffs_panel.duration_timer = nil
+
+function zero_pad(num)
+	if num &lt; 10 then return '0' .. num else return num end
+end
+
+function format_duration(duration)
+	local hours = math.floor(duration / (60 * 60))
+	local mins = math.floor(duration / 60)
+	local secs = duration % 60
+	return (hours &gt; 0 and hours .. ':' or '') .. zero_pad(mins) .. ':' .. zero_pad(secs)
+end
+
+function capitalize(str)
+  return (str:gsub(&quot;^%l&quot;, string.upper))
+end
+
+function ui.buffs_panel:parse_buff(buffname, buff)
+	return {
+		name = buffname,
+		duration = buff[1],
+		description = buff[2],
+		is_debuff = buff[3],
+		stacks = buff[4]
+	}	
+end
+
+function ui.buffs_panel:update_buffs()
+	self:update_buffs_table()
+	self:reset_duration_timer()
+end
+
+function ui.buffs_panel:reset_duration_timer()
+	
+	function set_new_timer(buffname)
+		local buff = ui.buffs_panel.current_buffs[buffname]
+		if (buff and buff.duration &gt; 0) then
+			buff.duration = buff.duration - 1
+			if (buff.countdown_timer) then
+				ui.buffs_panel:kill_countdown_timer(buff.name)
+			end
+			buff.countdown_timer = tempTimer(1, function()
+				set_new_timer(buffname)
+			end)
+		else
+			if buff then ui.buffs_panel:remove_buff(buff.name) end
+		end
+		ui.buffs_panel:render()
+	end
+	
+	local new_buffs = gmcp.Char.Buffs
+	
+	for i,v in pairs(new_buffs) do
+		if (ui.buffs_panel.current_buffs[i]) then
+			local buff = ui.buffs_panel.current_buffs[i]
+			if (buff.countdown_timer) then
+				ui.buffs_panel:kill_countdown_timer(buff.name)
+			end		
+			buff.countdown_timer = tempTimer(1, function()
+				set_new_timer(buff.name)
+			end)
+		end
+	end
+end
+
+function ui.buffs_panel:update_buffs_table()
+	local new_buffs = gmcp.Char.Buffs
+	for i,v in pairs(new_buffs) do
+		if (ui.buffs_panel:did_buff_expire(v)) then
+			ui.buffs_panel:remove_buff(i)
+		else
+			ui.buffs_panel.current_buffs[i] = self:parse_buff(i, v)
+		end
+	end
+	ui.buffs_panel:render()
+end
+
+function ui.buffs_panel:did_buff_expire(buff)
+	return buff == 0
+end
+
+function ui.buffs_panel:remove_buff(buffname)
+	if (ui.buffs_panel.current_buffs[buffname]) then
+		ui.buffs_panel:kill_countdown_timer(buffname)
+		ui.buffs_panel.current_buffs[buffname] = nil
+	end
+end
+
+function ui.buffs_panel:clear()
+	for i,v in pairs(ui.buffs_panel.current_buffs) do
+		ui.buffs_panel:remove_buff(i)
+	end
+	ui.buffs_panel:render()
+end
+
+function ui.buffs_panel:kill_countdown_timer(buffname)
+	if (ui.buffs_panel.current_buffs[buffname]) then
+		local buff = ui.buffs_panel.current_buffs[buffname]
+		if (buff.countdown_timer) then
+			disableTimer(buff.countdown_timer)
+			killTimer(buff.countdown_timer)
+			buff.countdown_timer = nil
+		end
+	end
+end
+
+function ui.buffs_panel:render()
+	local messages = {}
+	for buffname, buff in pairs(ui.buffs_panel.current_buffs) do
+		local stacks = buff.stacks &gt; 1 and ' (' .. buff.stacks .. ')' or ''
+		local color = buff.is_debuff == 1 and 'red' or 'white'
+		table.insert(messages, &quot;&lt;center&gt;&lt;p&gt;&lt;b&gt;&lt;span style=\&quot;color: &quot; .. color .. &quot;\&quot;&gt;&quot;..capitalize(buffname) .. &quot;&lt;/span&gt;&quot; .. stacks .. &quot;:&lt;/b&gt; &quot; .. format_duration(buff.duration) .. &quot;&lt;/p&gt;&lt;/center&gt;&quot;)
+	end
+	if not ui.buffs_panel.container then
+		ui.buffs_panel.container = Geyser.Label:new({
+			x = '5%',
+			y = '5%',
+			height = '90%',
+			width = '90%',
+			name = 'buffs_panel__container' 
+		}, ui.layout.buffs_panel)
+		ui.buffs_panel.container:setStyleSheet([[
+			background-color: ]] .. ui.views.styles.main_background_color .. [[;
+			padding: ]] .. ui.views.styles.panel_padding .. [[;
+		]])
+	end
+	if not ui.buffs_panel.list then
+		ui.buffs_panel.list = ui.components.label_list:new(5, '&lt;center&gt;Buffs&lt;/center&gt;', messages, ui.buffs_panel.container, { height = '80%' })
+	else
+		ui.buffs_panel.list:refresh(messages)
+	end
+end
+
+registerAnonymousEventHandler('gmcp.Char.Buffs', 'ui.buffs_panel:update_buffs')
+registerAnonymousEventHandler('gmcp.Char.Quit', 'ui.buffs_panel:clear')
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>VitalsPanel</name>
+                        <packageName></packageName>
+                        <script>Ele = {}
+Ele.UI = {}
+Ele.UI.ScrollbarWidth = 15 -- Width of you scrollbar ADAPT TO SYSTEM.
+Ele.UI.BottomAlign   = false -- Set to true to align to bottom
+
+-- These variables can be used to easily change many aspects of the plugin.
+-- This should be relatively easy even for people with no Lua/scripting experience.
+Ele.UI.Vitals = {}
+Ele.UI.Vitals.HideXPRate = false -- Set to true to hide the XP/Hour bar.
+Ele.UI.Vitals.BarHeight  = 15  -- Height of the bars
+Ele.UI.Vitals.BarWidth   = 200 -- Width of the bars
+Ele.UI.Vitals.BarYMargin = 2 -- Vertical spacing between bars
+Ele.UI.Vitals.Border     = 2 -- Thickness of the border around that surrounds the bars.
+Ele.UI.Vitals.Margin     = 2 -- Size of the margin that surrounds the border.
+Ele.UI.Vitals.Padding    = 2 -- Size of the padding that sits between border and bars.
+Ele.UI.Vitals.Space      = (Ele.UI.Vitals.Border + Ele.UI.Vitals.Margin + Ele.UI.Vitals.Padding) -- DON'T CHANGE Total space between bars and outer edge of the statuscontainer calculated from other values. If you've read this you'll know whether you can safely change this.
+Ele.UI.Vitals.Width      = Ele.UI.Vitals.BarWidth + Ele.UI.Vitals.Space * 2 -- DON'T CHANGE Width of the statuscontainer automatically calculated from other values.  If you've read this you'll know whether you can safely change this.
+Ele.UI.Vitals.X          = 0
+Ele.UI.Vitals.Y          = 0 -- Y coordinate of the statuscontainer that holds everything else
+Ele.UI.Vitals.BarX          = Ele.UI.Vitals.Space -- X coordinate of the bars within the statuscontainer.
+Ele.UI.Vitals.Barcount = 0
+Ele.UI.Vitals.Gradient = {}
+Ele.UI.Vitals.Gradient.Red = {}
+Ele.UI.Vitals.Gradient.Yellow = {}
+Ele.UI.Vitals.Gradient.Green = {}
+Ele.UI.Vitals.Gradient.Lime = {}
+Ele.UI.Vitals.Gradient.Blue = {}
+Ele.UI.Vitals.Gradient.Red.Front = {&quot;f04141&quot;, &quot;ef2929&quot;, &quot;cc0000&quot;, &quot;a40000&quot;}
+Ele.UI.Vitals.Gradient.Red.Back = {&quot;bd3333&quot;, &quot;bd2020&quot;, &quot;990000&quot;, &quot;700000&quot;}
+Ele.UI.Vitals.Gradient.Yellow.Front = {&quot;f0f041&quot;, &quot;f0f029&quot;, &quot;cccc00&quot;, &quot;a3a300&quot;}
+Ele.UI.Vitals.Gradient.Yellow.Back = {&quot;bdbd33&quot;, &quot;bdbd20&quot;, &quot;999900&quot;, &quot;707000&quot;}
+Ele.UI.Vitals.Gradient.Green.Front = {&quot;41f041&quot;, &quot;29ef29&quot;, &quot;00cc00&quot;, &quot;00a400&quot;}
+Ele.UI.Vitals.Gradient.Green.Back = {&quot;33bd33&quot;, &quot;20bd20&quot;, &quot;009900&quot;, &quot;007000&quot;}
+Ele.UI.Vitals.Gradient.Lime.Front = {&quot;98f041&quot;, &quot;8cf029&quot;, &quot;66cc00&quot;, &quot;52a300&quot;}
+Ele.UI.Vitals.Gradient.Lime.Back = {&quot;78bd33&quot;, &quot;6ebd20&quot;, &quot;4c9900&quot;, &quot;387000&quot;}
+Ele.UI.Vitals.Gradient.Blue.Front = {&quot;4141f0&quot;, &quot;2929ef&quot;, &quot;0000cc&quot;, &quot;0000a4&quot;}
+Ele.UI.Vitals.Gradient.Blue.Back = {&quot;3333bd&quot;, &quot;2020bd&quot;, &quot;000099&quot;, &quot;000070&quot;}
+
+Ele.UI.Vitals.BarY = function (increment)
+  increment = increment or 1
+  return (Ele.UI.Vitals.BarYMargin + Ele.UI.Vitals.BarHeight) * (Ele.UI.Vitals.Barcount) + Ele.UI.Vitals.Space
+end
+
+Ele.UI.Vitals.createStatusBar = function (ref, cons, container)
+  -- Set default parameters if they were not passed
+  cons.x = cons.x or '2.5%'
+  cons.y = cons.y or Ele.UI.Vitals.BarY()
+  cons.width = '95%'
+  cons.height = cons.height or Ele.UI.Vitals.BarHeight
+  for k,v in ipairs(cons) do
+    display(&quot;cons[&quot; .. k .. &quot;] : &quot; .. v)
+  end
+  ref = ref or Geyser.Gauge:new(cons, container) -- create new Gauge if ref == nil
+  -- Update fields one by one, calling ref:set_constraints(cons) didn't work. This is probably due to the peculiarities of Lua referencing.
+  ref.x = cons.x
+  ref.y = cons.y
+  ref.width = cons.width
+  ref.height = cons.height
+  Ele.UI.Vitals.Barcount = Ele.UI.Vitals.Barcount + 1
+  return ref
+end
+
+Ele.UI.Vitals.styleStatusBar = function (bar, gradient)
+  if bar == nil then return end -- Don't do anything when the bar is disabled/hidden.
+  -- This style is an adaption of the MUDlet Wiki example on styling Geyser Gauges
+  -- I adapted paddings specifically so that the text from Gauge.front and Gauge.back seamlessly blends.
+  -- If you change the style this may have to be retweaked.
+  bar.front:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #]] .. gradient.Front[1] .. [[, stop: 0.1 #]] .. gradient.Front[2] .. [[, stop: 0.49 #]] .. gradient.Front[3] .. [[, stop: 0.5 #]] .. gradient.Front[4] .. [[, stop: 1 #]] .. gradient.Front[3] .. [[);
+    border-top: 1px black solid;
+    border-left: 1px black solid;
+    border-bottom: 1px black solid;
+    border-radius: 7;
+    padding: 1px;
+    padding-right: 0px;]])
+  bar.back:setStyleSheet([[background-color: QLinearGradient( x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #]] .. gradient.Front[1] .. [[, stop: 0.1 #]] .. gradient.Back[2] .. [[, stop: 0.49 #]] .. gradient.Back[3] .. [[, stop: 0.5 #]] .. gradient.Back[4] .. [[, stop: 1 #]] .. gradient.Back[3] .. [[);
+    border-width: 1px;
+    border-color: black;
+    border-style: solid;
+    border-radius: 7;
+    padding: 1px;
+    padding-left: 0px;]])
+end
+
+Ele.UI.Vitals.alignY = function ()
+  if Ele.UI.BottomAlign then
+    return (-1) * (Ele.UI.Vitals.BarY(0) + 2 * Ele.UI.Vitals.Space)
+  else
+    return Ele.UI.Vitals.Y
+  end
+end
+
+Ele.UI.Vitals.initStatus = function ()
+  Ele.UI.Vitals.Container = ui.layout.vitals_panel
+  -- Ele.UI.Vitals.Styler = Ele.UI.Vitals.Styler or Geyser.Label:new({name = &quot;statuscontainer_style_label&quot;}, Ele.UI.Vitals.Container)
+  -- Ele.UI.Vitals.Styler:setStyleSheet(
+    -- [[background: black;
+      -- border-width:    ]] .. Ele.UI.Vitals.Border .. [[px;
+      -- border-color: white;
+      -- border-style: solid;
+      -- padding:         ]] .. Ele.UI.Vitals.Padding .. [[px;
+      -- margin:          ]] .. Ele.UI.Vitals.Margin .. [[px;
+      -- border-radius: 10;]])
+  Ele.UI.Vitals.Barcount = 0
+  -- Reorder createStatusBar lines to reorder the bars in the interface
+  Ele.UI.Vitals.HPBar = Ele.UI.Vitals.createStatusBar(Ele.UI.Vitals.HPBar,{name = &quot;hpBar&quot;}, Ele.UI.Vitals.Container)
+  Ele.UI.Vitals.GPBar = Ele.UI.Vitals.createStatusBar(Ele.UI.Vitals.GPBar,{name = &quot;mpBar&quot;}, Ele.UI.Vitals.Container)
+	Ele.UI.Vitals.BPBar = Ele.UI.Vitals.createStatusBar(Ele.UI.Vitals.BRBar,{name = &quot;spBar&quot;}, Ele.UI.Vitals.Container)
+  Ele.UI.Vitals.XPBar = Ele.UI.Vitals.createStatusBar(Ele.UI.Vitals.XPBar,{name = &quot;xpBar&quot;}, Ele.UI.Vitals.Container)
+  Ele.UI.Vitals.styleStatusBar(Ele.UI.Vitals.HPBar, Ele.UI.Vitals.Gradient.Red)
+  Ele.UI.Vitals.styleStatusBar(Ele.UI.Vitals.GPBar, Ele.UI.Vitals.Gradient.Blue)
+  Ele.UI.Vitals.styleStatusBar(Ele.UI.Vitals.XPBar, Ele.UI.Vitals.Gradient.Yellow)
+  Ele.UI.Vitals.styleStatusBar(Ele.UI.Vitals.BPBar, Ele.UI.Vitals.Gradient.Green)
+  -- Ele.UI.Vitals.Container:set_constraints({x=Ele.UI.Vitals.X,y = Ele.UI.Vitals.alignY(),width = Ele.UI.Vitals.Width,height = (Ele.UI.Vitals.BarY() - Ele.UI.Vitals.BarYMargin) + Ele.UI.Vitals.Space})
+  -- Ele.UI.Vitals.Styler:set_constraints({x = 0, y = 0, width = &quot;100%&quot;, height = &quot;100%&quot;})
+  --Bind eventhandler for gmcp.Char.Vitals to status update function.
+  registerAnonymousEventHandler(&quot;gmcp.Char.Vitals&quot;, &quot;Ele.UI.Vitals.update&quot;)
+end
+
+Ele.UI.Vitals.updateStatusBar = function (bar, barname, bmin, bmax)
+  if bar and bmin and bmax then
+    bar:setValue(bmin &gt; bmax and bmax or bmin, bmax, string.format(&quot;%s: [%d/%d]&quot;, barname, bmin, bmax))
+  end
+end
+
+Ele.UI.Vitals.update = function ()
+  Ele.UI.Vitals.updateStatusBar(Ele.UI.Vitals.HPBar, &quot;HP&quot;, gmcp.Char.Vitals.hp, gmcp.Char.Vitals.maxhp)
+  Ele.UI.Vitals.updateStatusBar(Ele.UI.Vitals.GPBar, &quot;MP&quot;, gmcp.Char.Vitals.mp, gmcp.Char.Vitals.maxmp)
+  Ele.UI.Vitals.updateStatusBar(Ele.UI.Vitals.BPBar, &quot;SP&quot;, gmcp.Char.Vitals.sp, gmcp.Char.Vitals.maxsp)
+  if (gmcp.Char.Vitals.maxexp) then Ele.UI.Vitals.updateStatusBar(Ele.UI.Vitals.XPBar, &quot;XP&quot;, gmcp.Char.Vitals.exp, gmcp.Char.Vitals.maxexp) end
+end
+
+Ele.UI.Vitals.initStatus()
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>TargetPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers.target_panel = ui.controllers.target_panel or {}
+
+ui.controllers.target_panel.state = {
+  name = nil,
+  level = nil,
+  targetOfTarget = nil,
+  casting = nil
+}
+
+ui.controllers.target_panel.duration_timer = nil
+
+function ui.controllers.target_panel:update_target_status()
+	if not next(gmcp.Char.Target) then
+		ui.controllers.target_panel:clear()
+	else
+    ui.controllers.target_panel.state.name = gmcp.Char.Target.name or ui.controllers.target_panel.state.name
+    ui.controllers.target_panel.state.level = gmcp.Char.Target.level or ui.controllers.target_panel.state.level
+    ui.controllers.target_panel.state.targetOfTarget = gmcp.Char.Target.target or ui.controllers.target_panel.state.targetOfTarget
+  	ui.views.target_panel:render(ui.controllers.target_panel.state)
+	end
+end
+
+function ui.controllers.target_panel:update_target_cast()
+  function set_new_timer()
+    local casting = ui.controllers.target_panel.state.casting
+    if (casting and casting.time_left &gt;= 0) then
+      casting.time_left = casting.time_left - .1
+			ui.views.target_panel:render(ui.controllers.target_panel.state)
+      if (ui.controllers.target_panel.cast_timer) then
+        ui.controllers.target_panel:kill_countdown_timer()
+      end
+      ui.controllers.target_panel.cast_timer = tempTimer(.1, function()
+        set_new_timer()
+      end)
+    else
+      if casting then ui.controllers.target_panel.state.casting = nil end
+    end
+  end
+
+  local duration = gmcp.Char.Target.Cast.cast_time
+  if duration &lt;= 0 then
+    ui.controllers.target_panel.state.casting = nil
+  else
+    ui.controllers.target_panel.state.casting = {
+      name = gmcp.Char.Target.Cast.spell,
+      casttime = duration,
+      time_left = duration
+    }
+    if ui.controllers.target_panel.cast_timer then
+      ui.controllers.target_panel:kill_countdown_timer()
+    end
+		ui.controllers.target_panel.cast_timer = tempTimer(.1, set_new_timer)
+  end
+  ui.views.target_panel:render(ui.controllers.target_panel.state)
+end
+
+function ui.controllers.target_panel:kill_countdown_timer()
+  disableTimer(ui.controllers.target_panel.cast_timer)
+  killTimer(ui.controllers.target_panel.cast_timer)
+  ui.controllers.target_panel.cast_timer = nil
+end
+
+function ui.controllers.target_panel:update_target_vitals()
+  ui.controllers.target_panel.state.hp = gmcp.Char.Target.Vitals.hp or ui.controllers.target_panel.state.hp
+	if (ui.controllers.target_panel.state.hp &lt;= 0) then
+	  ui.controllers.target_panel:clear()
+	else
+  	ui.controllers.target_panel.state.mp = gmcp.Char.Target.Vitals.mp or ui.controllers.target_panel.state.mp
+  	ui.controllers.target_panel.state.sp = gmcp.Char.Target.Vitals.sp or ui.controllers.target_panel.state.sp
+  	ui.views.target_panel:render(ui.controllers.target_panel.state)
+	end
+end
+
+function ui.controllers.target_panel:clear()
+  ui.controllers.target_panel.state = {}
+  ui.views.target_panel:render(ui.controllers.target_panel.state)
+end
+
+registerAnonymousEventHandler('gmcp.Char.Target', 'ui.controllers.target_panel:update_target_status')
+registerAnonymousEventHandler('gmcp.Char.Target.Cast', 'ui.controllers.target_panel:update_target_cast')
+registerAnonymousEventHandler('gmcp.Char.Target.Vitals', 'ui.controllers.target_panel:update_target_vitals')
+registerAnonymousEventHandler('gmcp.Char.Quit', 'ui.controllers.target_panel:clear')
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>BagsPanel</name>
+                        <packageName></packageName>
+                        <script>-- ui = ui or {}
+-- ui.controllers.bags_panel = ui.controllers.bags_panel or {}
+-- 
+-- ui.controllers.bags_panel.state = {
+	-- bags = {}
+-- }
+-- 
+-- -- shape of state
+-- 
+-- -- {
+-- --   bags = [
+-- --     {
+-- --       id: 123456
+-- --       name: 'Adventurer\'s backpack',
+-- --       contents: [
+-- --         {
+-- --           id: 123999,
+-- --           name: 'Sword of Dracon',
+-- --           type: 'weapon',
+-- --           subtype: 'sword'
+-- --         }
+-- --       ]
+-- --     }
+-- --   ]
+-- -- }
+-- 
+-- -- what happens when I get a bag
+  -- -- Char.Items is triggered
+  -- -- Char.Items.Bag is triggered
+-- 
+-- -- what happens when I put something in my bag
+  -- -- { 123456 = { type: 'armour' (0 if none), subtype: 'amulet' (0 if none), 'name': 'Prayer Beads' (note capitalization) }}
+-- 
+-- -- what happens when I remove something from my bag
+  -- -- { 123456 = 0 }
+-- 
+-- 
+-- -- what happens when I drop/lose a bag
+  -- -- Char.Items is triggered
+  -- -- Char.Items.Bag is NOT triggered
+-- 
+-- 
+-- -- handles when a bag is added to inventory
+-- -- handles when items are added to and removed from bags
+-- function ui.controllers.bags_panel:on_char_items_bag()
+	-- -- ui.controllers.bags_panel:handle_bag_added()
+  -- -- display(ui.controllers.bags_panel.state)
+	-- display(gmcp.Char.Items.Bag)
+-- end
+-- 
+-- -- handles when bags are dropped
+-- function ui.controllers.bags_panel:on_char_items()
+	-- -- ui.controllers.bags_panel:handle_bag_dropped()
+  -- -- display(ui.controllers.bags_panel.state)
+	-- display(gmcp.Char.Items)
+-- end
+-- 
+-- function ui.controllers.bags_panel:parse_bag()
+-- end
+-- 
+-- function ui.controllers.bags_panel:handle_bag_added()
+  -- for bag_id, bag_items in pairs(gmcp.Char.Items.Bag) do
+    -- if (ui.controllers.bags_panel.state.bags[bag_id] ~= nil) then
+      -- if (bag_items ~= 0) then
+        -- for item_id, item in pairs(bag_items) do
+          -- ui.controllers.bags_panel.state.bags[bag_id][item_id] = item
+        -- end
+      -- else
+        -- ui.controllers.bags_panel.state.bags[bag_id] = nil
+      -- end
+    -- else
+      -- if (bag_items ~= 0) then
+        -- ui.controllers.bags_panel.state.bags[bag_id] = {}
+        -- for item_id, item in pairs(bag_items) do
+          -- ui.controllers.bags_panel.state.bags[bag_id][item_id] = item
+        -- end
+      -- end
+    -- end
+  -- end
+-- end
+-- 
+-- function ui.controllers.bags_panel:handle_bag_dropped()
+  -- if gmcp.Char.Items.Bag ~= nil then
+    -- for i,v in pairs(gmcp.Char.Items.Bag) do
+      -- if ui.controllers.bags_panel.state.bags[i] ~= nil and v == 0 then
+        -- ui.controllers.bags_panel.state.bags[i] = nil
+      -- end
+    -- end
+  -- end
+-- end
+-- 
+-- function ui.controllers.bags_panel:handle_item_added_to_bag()
+-- end
+-- 
+-- function ui.controllers.bags_panel:handle_item_removed_from_bag()
+-- end
+-- 
+-- function ui.controllers.bags_panel:remove_dropped_bags()
+	-- for i,v in pairs(gmcp.Char.Items) do
+		-- echo('key:\n')
+		-- display(i)
+		-- echo('value:\n')
+		-- display(v)
+	-- end
+-- end
+-- 
+-- registerAnonymousEventHandler('gmcp.Char.Items.Bag', 'ui.controllers.bags_panel:on_char_items_bag')
+-- registerAnonymousEventHandler('gmcp.Char.Items', 'ui.controllers.bags_panel:on_char_items')
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>MapPanel</name>
+                        <packageName></packageName>
+                        <script>mudlet = mudlet or {}; mudlet.mapper_script = true
+ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.map_panel = ui.controllers.map_panel or {}
+
+
+function ui.controllers.map_panel:count_rooms()
+	local count = 0
+	for dir, id in pairs(getRooms()) do
+		count = count +1
+	end
+	cecho(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; Total Rooms: &quot;..count..&quot;\n&quot;)
+end
+
+function ui.controllers.map_panel:get_colours()
+	for c, id in pairs(getCustomEnvColorTable()) do
+		setFgColor(id[1],id[2],id[3])
+		print(&quot;setRoomEnv(ID,&quot;..c..&quot;)&quot;)
+	end
+end
+
+
+function ui.controllers.map_panel:add_room_neighbours(roomId,exits)
+	local x,y,z = getRoomCoordinates(gmcp.Room.Id)
+  for dir, id in pairs(exits) do
+		local newx,newy,newz = ui.controllers.map_panel:calculate_coordinates(x,y,z,dir)
+		if not roomExists(id) then
+      addRoom(id)
+  		setRoomCoordinates(id,newx,newy,newz)
+  		setRoomArea(id,getRoomArea(roomId))
+	end
+	if not getRoomExits(roomId)[dir] then
+  		if ui.controllers.map_panel:is_standard_exit(dir) then
+  			setExit(roomId,id,dir)
+  			setExit(id,roomId,ui.controllers.map_panel.reverse_map[dir])
+  		else
+  			addSpecialExit(roomId,id,dir)
+  		end
+--  		cecho(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; Adding [&quot;..dir..&quot;] =&gt; &quot;..id..&quot;\n&quot;)
+    end
+  	updateMap()
+	end
+end
+
+function ui.controllers.map_panel:is_standard_exit(dir)
+	if dir == &quot;north&quot; then
+		return true
+	elseif dir == &quot;northeast&quot; then
+		return true
+	elseif dir == &quot;east&quot; then
+		return true
+	elseif dir == &quot;southeast&quot; then
+		return true
+	elseif dir == &quot;south&quot; then
+		return true
+	elseif dir == &quot;southwest&quot; then
+		return true
+	elseif dir == &quot;west&quot; then
+		return true
+	elseif dir == &quot;northwest&quot; then
+		return true
+	elseif dir == &quot;up&quot; then
+		return true
+	elseif dir == &quot;down&quot; then
+		return true
+	elseif dir == &quot;in&quot; then
+		return true
+	elseif dir == &quot;out&quot; then
+		return true
+	else
+		return false
+	end
+end
+
+function ui.controllers.map_panel:calculate_coordinates(x,y,z,dir)
+	if dir == &quot;north&quot; then
+		y = y + 2
+	elseif dir == &quot;northeast&quot; then
+		x = x + 2
+		y = y + 2
+	elseif dir == &quot;east&quot; then
+		x = x + 2
+	elseif dir == &quot;southeast&quot; then
+		x = x + 2
+		y = y - 2
+	elseif dir == &quot;south&quot; then
+		y = y - 2
+	elseif dir == &quot;southwest&quot; then
+		x = x - 2
+		y = y - 2
+	elseif dir == &quot;west&quot; then
+		x = x - 2
+	elseif dir == &quot;northwest&quot; then
+		x = x - 2
+		y = y + 2
+	elseif dir == &quot;up&quot; then
+		z = z + 2
+	elseif dir == &quot;down&quot; then
+		z = z - 2
+	else
+		x = x + 1
+		y = y + 1
+	end
+	return x,y,z
+end
+
+function ui.controllers.map_panel:find_room()
+	ui.controllers.map_panel.lastRoom = ui.controllers.map_panel.currentRoom or gmcp.Room.Id
+	ui.controllers.map_panel.lastX,ui.controllers.map_panel.lastY,ui.controllers.map_panel.lastZ = getRoomCoordinates(ui.controllers.map_panel.lastRoom) or {}
+	ui.controllers.map_panel.currentRoom = gmcp.Room.Id
+	if roomExists(ui.controllers.map_panel.currentRoom) then
+		centerview(ui.controllers.map_panel.currentRoom)
+	else
+		if ui.controllers.map_panel.currentRoom == 78378792 then -- Valena Stagecoach Office
+			local newarea = getAreaTable()['Valena'] or addAreaName(&quot;Valena&quot;)
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,0,0,0,newarea)
+		elseif ui.controllers.map_panel.currentRoom == 116145107 then -- Rosfarren Stagecoach Office
+			local newarea = getAreaTable()['Rosfarren'] or addAreaName(&quot;Rosfarren&quot;)
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,0,0,0,newarea)
+		elseif ui.controllers.map_panel.currentRoom == 117145107 then -- Dun Glenderry Stagecoach Office
+			local newarea = getAreaTable()['Dun Glenderry'] or addAreaName(&quot;Dun Glenderry&quot;)
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,0,0,0,newarea)
+		elseif ui.controllers.map_panel.currentRoom == 18301318 then -- Drakenwood Stagecoach Office
+			local newarea = getAreaTable()['Drakenwood'] or addAreaName(&quot;Drakenwood&quot;)
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,0,0,0,newarea)
+		end 
+		cecho(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; No Room found for &lt;red&gt;&quot;..gmcp.Room.Id..&quot;&lt;reset&gt;\n&quot;)
+	end
+end
+
+function ui.controllers.map_panel:add_exits()
+	if roomExists(ui.controllers.map_panel.currentRoom) then
+		ui.controllers.map_panel:add_room_neighbours(gmcp.Room.Id,gmcp.Room.Exits)
+	else
+		ui.controllers.map_panel:find_link(gmcp.Room.Exits)
+	end
+end
+
+function ui.controllers.map_panel:find_link(exits)
+  for dir, id in pairs(exits) do
+		if roomExists(id) then
+			cecho(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; Found adjoining room =&gt;&lt;red&gt;&quot;..id..&quot;&lt;reset&gt; &quot;..ui.controllers.map_panel.exit_map[ui.controllers.map_panel.reverse_map[dir]]..&quot;\n&quot;)
+			local x,y,z = getRoomCoordinates(id)
+			local newx,newy,newz = ui.controllers.map_panel:calculate_coordinates(x,y,z,ui.controllers.map_panel.exit_map[ui.controllers.map_panel.reverse_map[dir]])
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,newx,newy,newz,getRoomArea(ui.controllers.map_panel.lastRoom))
+			break
+		end
+	end
+	if not roomExists(gmcp.Room.Id) then
+			local x,y,z = getRoomCoordinates(ui.controllers.map_panel.lastRoom)
+			ui.controllers.map_panel:add_room(ui.controllers.map_panel.currentRoom,x+1,y+1,z,getRoomArea(ui.controllers.map_panel.lastRoom))
+			cecho(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; I didn't know where to put this room! [&quot;..gmcp.Room.Id..&quot;] please move it manually (New Zone?)\n&quot;)
+	end
+end
+
+function ui.controllers.map_panel:add_room(id,x,y,z,area)
+	addRoom(id)
+	setRoomCoordinates(id,x,y,z)
+	setRoomArea(id,area)
+	centerview(id)
+	ui.controllers.map_panel:add_room_neighbours(id,gmcp.Room.Exits)
+end
+
+function ui.controllers.map_panel:purge_map()
+	for id, room in pairs(getRooms()) do
+		deleteRoom(id)
+		print(&quot;&lt;cyan&gt;[  MAP  ]&lt;reset&gt; Deleting =&gt; &quot;..id..&quot;\n&quot;)
+	end	
+end
+
+ui.controllers.map_panel.reverse_map = {
+  n = 6,
+  north = 6,
+  ne = 8,
+  northeast = 8,
+  nw = 7,
+  northwest = 7,
+  e = 5,
+  east = 5,
+  w = 4,
+  west = 4,
+  s = 1,
+  south = 1,
+  se = 3,
+  southeast = 3,
+  sw = 2,
+  southwest = 2,
+  u = 10,
+  up = 10,
+  d = 9,
+  down = 9,
+  [&quot;in&quot;] = 12,
+  out = 11}
+ui.controllers.map_panel.exit_map = {
+  n = 1,
+  north = 1,
+  ne = 2,
+  northeast = 2,
+  nw = 3,
+  northwest = 3,
+  e = 4,
+  east = 4,
+  w = 5,
+  west = 5,
+  s = 6,
+  south = 6,
+  se = 7,
+  southeast = 7,
+  sw = 8,
+  southwest = 8,
+  u = 9,
+  up = 9,
+  d = 10,
+  down = 10,
+  [&quot;in&quot;] = 11,
+  out = 12,
+  [1] = &quot;north&quot;,
+  [2] = &quot;northeast&quot;,
+  [3] = &quot;northwest&quot;,
+  [4] = &quot;east&quot;,
+  [5] = &quot;west&quot;,
+  [6] = &quot;south&quot;,
+  [7] = &quot;southeast&quot;,
+  [8] = &quot;southwest&quot;,
+  [9] = &quot;up&quot;,
+  [10] = &quot;down&quot;,
+  [11] = &quot;in&quot;,
+  [12] = &quot;out&quot;,
+}	
+
+function ui.controllers.map_panel.mapper_installed()
+  if next(getRooms()) == nil then
+  	setAreaName(1,&quot;Drakenwood&quot;)
+  	setAreaName(2,&quot;Valena&quot;)
+  	setAreaName(3,&quot;Rosfarren&quot;)
+  	setAreaName(4,&quot;Aerdy&quot;)
+	setAreaName(5,&quot;Dun Glenderry&quot;)
+  	addRoom(gmcp.Room.Id)
+  	setRoomCoordinates(gmcp.Room.Id,0,0,0)
+  	setRoomArea(gmcp.Room.Id,1)
+  	centerview(gmcp.Room.Id)
+  	ui.controllers.map_panel:add_room_neighbours(gmcp.Room.Id,gmcp.Room.Exits)
+  	updateMap()
+  end
+end
+
+function doSpeedWalk()
+    -- we can do a lot here, this fires when a room is double clicked on, and is intended to speedwalk to it
+    print(&quot;Path to &quot; .. getRoomName(speedWalkPath[#speedWalkPath]) .. &quot;: &quot; .. table.concat(speedWalkDir, &quot;, &quot;))
+		speedwalk(table.concat(speedWalkDir, &quot;, &quot;),false,0.36)
+end
+
+function ui.controllers.map_panel:on_symbol(...)
+	local style = arg[2]
+	local rooms = arg[3]
+	if style == &quot;Post Office&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;✉&quot;)
+	  end
+	elseif style == &quot;Store&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;🛒&quot;)
+	  end
+	elseif style == &quot;Bank&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;💰&quot;)
+	  end
+	elseif style == &quot;Stable&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;🐴&quot;)
+	  end
+	elseif style == &quot;Book&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;📖&quot;)
+	  end
+	elseif style == &quot;Swords&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;⚔&quot;)
+	  end
+	elseif style == &quot;Clear&quot; then
+		for i = 3,arg['n'] do
+			setRoomChar(arg[i],&quot;&quot;)
+	  end
+	end
+end
+
+ui.controllers.map_panel.mapper_installed()
+addMapMenu(&quot;Add Symbol&quot;)
+addMapEvent(&quot;Post Office&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Store&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Stable&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Bank&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Book&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Swords&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+addMapEvent(&quot;Clear&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;,&quot;Add Symbol&quot;)
+
+registerAnonymousEventHandler(&quot;ui.controllers.map_panel:on_symbol&quot;, &quot;ui.controllers.map_panel:on_symbol&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Room.Id&quot;, &quot;ui.controllers.map_panel:find_room&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Room.Exits&quot;, &quot;ui.controllers.map_panel:add_exits&quot;)
+registerAnonymousEventHandler(&quot;sysInstall&quot;, &quot;mapper_Installed&quot;)
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                    <Script isActive="yes" isFolder="no">
+                        <name>ChatPanel</name>
+                        <packageName></packageName>
+                        <script>ui = ui or {}
+ui.controllers = ui.controllers or {}
+ui.controllers.chat_panel = ui.controllers.chat_panel or {}
+
+ui.controllers.chat_panel.timestamp = &quot;HH:mm:ss&quot;
+
+ui.controllers.chat_panel.channelmap = {
+	Party = &quot;Party&quot;,
+	Tell = &quot;Tells&quot;,
+	Warmage = &quot;Guilds&quot;,
+	Druid = &quot;Guilds&quot;,
+	Fighter = &quot;Guilds&quot;,
+	Rogue = &quot;Guilds&quot;,
+	Monk = &quot;Guilds&quot;,
+	Ranger = &quot;Guilds&quot;,
+	Cleric = &quot;Guilds&quot;,
+	Valena = &quot;Other&quot;,
+	Aerdy = &quot;Other&quot;,
+	Drakenwood = &quot;Other&quot;,
+	Rosfarren = &quot;Other&quot;,
+	Newbie = &quot;Other&quot;,
+	Council = &quot;Other&quot;,
+	Honey = &quot;Other&quot;,
+	House = &quot;Other&quot;
+}
+		
+ui.controllers.chat_panel.channelcolour = {
+--colours as follows: 'lua showColors(4)' on Mudlet CLI
+	Tell = &quot;&lt;firebrick&gt;&quot;, --note this works for replies as well
+	Party = &quot;&lt;royal_blue&gt;&quot;, 
+	Warmage = &quot;&lt;red&gt;&quot;,
+	Druid = &quot;&lt;green&gt;&quot;,
+	Fighter = &quot;&lt;saddle_brown&gt;&quot;,
+	Rogue = &quot;&lt;maroon&gt;&quot;,
+	Monk = &quot;&lt;chocolate&gt;&quot;,
+	Ranger = &quot;&lt;DarkGreen&gt;&quot;,
+	Cleric = &quot;&lt;green&gt;&quot;,
+	Valena = &quot;&lt;sky_blue&gt;&quot;,
+	Aerdy = &quot;&lt;sky_blue&gt;&quot;,
+	Drakenwood = &quot;&lt;sky_blue&gt;&quot;,
+	Rosfarren = &quot;&lt;sky_blue&gt;&quot;,
+	Newbie = &quot;&lt;DarkOrange&gt;&quot;,
+	Council = &quot;&lt;papaya_whip&gt;&quot;,
+	House = &quot;&lt;yellow&gt;&quot;
+}
+	
+--This is the main code, don't fuck around with it unless you understand it.
+
+function ui.controllers.chat_panel:gmcptell()
+	--set vars
+	local charname = gmcp.Char.Status.name
+	local chat = &quot;Tells&quot;
+	local msgtype = gmcp.Msg.Tell.type
+	local msgto = gmcp.Msg.Tell.to
+	local msgfrom = gmcp.Msg.Tell.from
+	local msg = gmcp.Msg.Tell.msg
+	local rawmsg = gmcp.Msg.Tell.rawmsg
+	local chancol = ui.controllers.chat_panel.channelcolour[&quot;Tell&quot;]
+	local msgoutput
+	local english
+	local timestamp = getTime(true, ui.controllers.chat_panel.timestamp)
+	
+	if msgtype == &quot;tell&quot; then
+		if msgto == charname then
+			english = msgfrom..&quot; tells you:&lt;light_gray&gt; &quot;
+		end
+		if msgfrom == charname then
+			english = &quot;You tell &quot;..msgto..&quot;:&lt;light_gray&gt; &quot;
+		end
+	end
+	
+	if msgtype == &quot;reply to&quot; then
+		if msgto == charname then
+			english = msgfrom..&quot; replies to you:&lt;light_gray&gt; &quot;
+		end
+		if msgfrom == charname then
+			english = &quot;You reply to &quot;..msgto..&quot;:&lt;light_gray&gt; &quot;
+		end
+	end
+	
+	if demonnic.chat.config.timestamp then
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		msgoutput = chancol..timestamp..&quot; &quot;..english
+		demonnic.chat:cecho(chat,msgoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	else
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		msgoutput = chancol..english
+		demonnic.chat:cecho(chat,msgoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	end
+	
+	--Now GAG it from the main window.
+	moveCursor(0,getLineCount()-1)
+	deleteLine()
+end
+
+function ui.controllers.chat_panel:gmcpchat()
+--define vars
+	local debug = false --set to true for spam to screen (debug purposes)
+	--get the gmcp.Msg.Chat info
+	local rawmsg = gmcp.Msg.Chat.rawmsg
+	local emote = gmcp.Msg.Chat.emote
+	local who = gmcp.Msg.Chat.who
+	local msg = gmcp.Msg.Chat.msg
+	local channel = gmcp.Msg.Chat.channel
+	local formatoutput
+	local chat
+	local chancol
+	
+	if debug then
+		echo(&quot;\nEmote: &quot;..emote..&quot;, Who:&quot;..who..&quot;, Channel &quot;..channel..&quot;, Msg&quot;..msg..&quot;\n&quot;)
+	end
+
+		--create timestamp
+	local timestamp = getTime(true, ui.controllers.chat_panel.timestamp)
+	if debug then
+		echo(&quot;Variable 'timestamp' = &quot;..timestamp..&quot;\n&quot;)
+	end
+	
+		--work out the line to window mapping
+	chat = ui.controllers.chat_panel.channelmap[channel] or demonnic.chat.config.Alltab
+	if debug then
+		echo(&quot;\nVariable 'chat' = &quot;..chat..&quot;\n&quot;)
+	end
+
+		--get line colour
+	chancol = ui.controllers.chat_panel.channelcolour[gmcp.Msg.Chat.channel]
+	if debug then
+		echo(&quot;Variable 'chancol' = &quot;..chancol..&quot;\n&quot;)
+	end
+	
+	if demonnic.chat.config.timestamp then
+		if emote == 0 then
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..who..&quot;\]&lt;light_gray&gt; &quot;
+		elseif emote == 2 then
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..&quot;\]&lt;light_gray&gt; &quot;
+		else
+			formatoutput = chancol..timestamp..&quot; \[&quot;..channel..&quot;\]&lt;light_gray&gt;&quot;..who..&quot; &quot;
+		end
+
+		if debug then
+			echo(&quot;\nVariable 'formatoutput' = &quot;..formatoutput)
+		end
+
+		demonnic.chat:cecho(chat,formatoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	else
+		--build the message output (you have to do this because people are arseholes, which is why we cannot have nice things)
+		if emote == 0 then
+			local formatoutput = chancol..&quot;\[&quot;..channel..who..&quot;\]&lt;light_gray&gt; &quot;
+		else
+			local formatoutput = chancol..&quot;\[&quot;..channel..&quot;\]&lt;light_gray&gt;&quot;..who..&quot; &quot;
+		end
+		
+		if debug then
+			echo(&quot;\nVariable 'formatoutput' = &quot;..formatoutput)
+		end
+
+		demonnic.chat:cecho(chat,formatoutput)
+		demonnic.chat:echo(chat,msg..&quot;\n&quot;)
+	end
+	--Now GAG it from the main window.
+	--Note that this doesn't always work, especially when the line or tell rolls over to a second line
+	moveCursor(0,getLineCount()-1)
+	deleteLine()
+end
+
+registerAnonymousEventHandler(&quot;gmcp.Msg.Chat&quot;, &quot;ui.controllers.chat_panel:gmcpchat&quot;)
+registerAnonymousEventHandler(&quot;gmcp.Msg.Tell&quot;, &quot;ui.controllers.chat_panel:gmcptell&quot;)</script>
+                        <eventHandlerList/>
+                    </Script>
+                </ScriptGroup>
+                <Script isActive="yes" isFolder="no">
+                    <name>LayoutControllerV2</name>
+                    <packageName></packageName>
+                    <script>ui = ui or {}
+ui.layout = ui.layout or {}
+
+if not ui.layout.is_loaded then
+
+  --- constraints ---
+
+  ui.layout.cons = {}
+
+  ui.layout.cons.main_console_container = {
+    name = 'main_console_container',
+  	x = '17.5%',
+  	y = '5%',
+  	width = '65%',
+    height = '90%'
+  }
+
+  ui.layout.cons.left_and_right_containers = {
+  	y = 0,
+  	width = '17.5%',
+    height = '100%'
+  }
+
+	--- left container ---
+
+
+  ui.layout.cons.left_container = {
+    name = 'left_container',
+  	x = 0,
+  	y = 0,
+  	width = ui.layout.cons.left_and_right_containers.width,
+    height = ui.layout.cons.left_and_right_containers.height
+  }
+
+	ui.layout.cons.left_window = {
+    name = 'left_window',
+    x = 0,
+  	y = 0,
+    width = '100%',
+  	height = '100%'
+  }
+
+	ui.layout.cons.party_panel = {
+		name = 'party_panel',
+		x = 0,
+		y = 0,
+		height = '37.5%',
+		width = '100%'
+	}
+
+	ui.layout.cons.hunters_attackers_panel = {
+		name = 'hunters_attackers_panel',
+		x = 0,
+		y = '37.5%',
+		width = '100%',
+		height = '12.5%'
+	}
+
+	ui.layout.cons.hunters_panel = {
+		name = 'hunters_panel',
+		x = 0,
+		y = 0,
+		width = '50%',
+		height = '100%'
+	}
+
+	ui.layout.cons.attackers_panel = {
+		name = 'attackers_panel',
+		x = '50%',
+		y = 0,
+		width = '50%',
+		height = '100%'
+	}
+
+	ui.layout.cons.buffs_panel = {
+		name = 'buffs_panel',
+		x = 0,
+		y = '50%',
+		width = '100%',
+		height = '25%'
+	}
+
+	ui.layout.cons.target_panel = {
+		name = 'target_panel',
+		x = 0,
+		y = '75%',
+		width = '100%',
+		height = '12.5%'
+	}
+
+	ui.layout.cons.target_status_panel = {
+		name = 'target_status_panel',
+		x = 0,
+		y = 0,
+		width = '50%',
+		height = '100%'
+	}
+
+	ui.layout.cons.target_cast_panel = {
+		name = 'target_cast_panel',
+		x = '50%',
+		y = 0,
+		width = '50%',
+		height = '100%'
+	}
+
+	ui.layout.cons.vitals_panel = {
+		name = 'vitals_panel',
+		x = 0,
+		y = '87.5%',
+		width = '100%',
+		height = '12.5%',
+	}
+
+	--- right container ---
+
+  ui.layout.cons.right_container = {
+    name = 'right_container',
+  	x = '-17.5%',
+  	y = 0,
+  	width = ui.layout.cons.left_and_right_containers.width,
+    height = ui.layout.cons.left_and_right_containers.height
+  }
+
+  ui.layout.cons.right_window = {
+    name = 'right_window',
+    x = 0,
+  	y = 0,
+    width = '100%',
+  	height = '100%'
+  }
+
+	ui.layout.cons.map_panel = {
+		name = 'map_panel',
+		x = 0,
+		y = 0,
+		width = '100%',
+		height = '50%'
+	}
+
+	ui.layout.cons.chat_panel = {
+		name = 'chat_panel',
+		x = 0,
+		y = '50%',
+		width = '100%',
+		height = '45%'
+	}
+
+	ui.layout.cons.popup_trigger_panel = {
+		name = 'popup_trigger_panel',
+    x = 0,
+    y = '95%',
+    width = '100%',
+    height = '5%'
+	}
+
+	ui.layout.cons.inventory_in_bags_panel = {
+    name = 'inventory_in_bags_panel',
+    x = 0,
+    y = '45%',
+    width = '100%',
+    height = '55%'
+	}
+
+	--- top container ---
+
+	ui.layout.cons.top_container = {
+		name = 'top_container',
+		x = '17.5%',
+		y = 0,
+		width = '65%',
+		height = '5%'
+	}
+
+  ui.layout.cons.top_window = {
+    name = 'top_window',
+    x = 0,
+  	y = 0,
+    width = '100%',
+  	height = '100%'
+  }
+
+  ui.layout.cons.usable_items_panel = {
+  	name = 'usable_items_panel',
+  	x = 0,
+  	y = 0,
+  	width = '50%',
+  	height = '100%'
+  }
+
+	ui.layout.cons.skills_panel = {
+  	name = 'skills_panel',
+  	x = '33.33%',
+  	y = 0,
+  	width = '66.67%',
+  	height = '100%'
+  }
+
+	--- bottom container ---
+
+	ui.layout.cons.bottom_container = {
+		name = 'bottom_container',
+		x = '17.5%',
+		y = '95%',
+		width = '65%',
+		height = '5%'
+	}
+
+	ui.layout.cons.bottom_window = {
+    name = 'bottom_window',
+    x = 0,
+  	y = 0,
+    width = '100%',
+  	height = '100%'
+  }
+
+	ui.layout.cons.clickable_actions_panel = {
+    name = 'clickable_actions_panel',
+    x = 0,
+  	y = '95%',
+    width = '100%',
+  	height = '5%'
+  }
+
+  --- styles ---
+
+  --- shared styles ---
+
+  ui.layout.styles = {
+    main_background_color = '#111',
+    main_border_style = '1px solid #FFF'
+  }
+
+  --- stylesheets ---
+
+  ui.layout.stylesheets = {
+
+    --- left window ---
+
+  	left_window = [[
+    	background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+  	]],
+
+		party_panel = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+  	]],
+
+		hunters_attackers_panel = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+  	]],
+
+		hunters_panel = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+  	]],
+
+		attackers_panel = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+  	]],
+
+    status_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    limbs_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    buffs_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+      border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+      border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+		target_panel = [[
+			background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+		]],
+
+		target_status_panel = [[
+			background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+		]],
+
+		target_cast_panel = [[
+			background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+		]],
+
+		vitals_panel = [[
+			background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border: ]] .. ui.layout.styles.main_border_style .. [[;
+		]],
+
+    --- right window ---
+
+  	right_window = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+  	]],
+
+    map_panel = [[
+      background-color: #111;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    chat_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-left: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    popup_trigger_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    inventory_in_bags_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    --- top window ---
+
+	  top_window = [[
+    	background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+  	]],
+
+    stats_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+      border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    usable_items_panel = [[
+      background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-right: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+    ]],
+
+    --- bottom window ---
+
+  	bottom_window = [[
+  		background-color: ]] .. ui.layout.styles.main_background_color .. [[;
+			border-top: ]] .. ui.layout.styles.main_border_style .. [[;
+			border-bottom: ]] .. ui.layout.styles.main_border_style .. [[;
+  	]]
+  }
+
+  --- refs ---
+
+  --- main console window ---
+
+  ui.layout.main_console_container = Geyser.Container:new(ui.layout.cons.main_console_container)
+
+  --- left container ---
+
+  ui.layout.left_container = Geyser.Container:new(ui.layout.cons.left_container)
+
+  ui.layout.left_window = Geyser.Label:new(ui.layout.cons.left_window, ui.layout.left_container)
+  ui.layout.left_window:setStyleSheet(ui.layout.stylesheets.left_window)
+
+	ui.layout.party_panel = Geyser.Label:new(ui.layout.cons.party_panel, ui.layout.left_window)
+	ui.layout.party_panel:setStyleSheet(ui.layout.stylesheets.party_panel)
+
+	ui.layout.hunters_attackers_panel = Geyser.Label:new(ui.layout.cons.hunters_attackers_panel, ui.layout.left_window)
+	ui.layout.hunters_attackers_panel:setStyleSheet(ui.layout.stylesheets.hunters_attackers_panel)
+
+	ui.layout.hunters_panel = Geyser.Label:new(ui.layout.cons.hunters_panel, ui.layout.hunters_attackers_panel)
+	ui.layout.hunters_panel:setStyleSheet(ui.layout.stylesheets.hunters_panel)
+
+	ui.layout.attackers_panel = Geyser.Label:new(ui.layout.cons.attackers_panel, ui.layout.hunters_attackers_panel)
+	ui.layout.attackers_panel:setStyleSheet(ui.layout.stylesheets.attackers_panel)
+
+  -- ui.layout.status_panel = Geyser.Label:new(ui.layout.cons.status_panel, ui.layout.left_window)
+  -- ui.layout.status_panel:setStyleSheet(ui.layout.stylesheets.status_panel)
+	--
+  -- ui.layout.limbs_panel = Geyser.Label:new(ui.layout.cons.limbs_panel, ui.layout.left_window)
+  -- ui.layout.limbs_panel:setStyleSheet(ui.layout.stylesheets.limbs_panel)
+	--
+  ui.layout.buffs_panel = Geyser.Label:new(ui.layout.cons.buffs_panel, ui.layout.left_window)
+  ui.layout.buffs_panel:setStyleSheet(ui.layout.stylesheets.buffs_panel)
+
+	ui.layout.target_panel = Geyser.Label:new(ui.layout.cons.target_panel, ui.layout.left_window)
+	ui.layout.target_panel:setStyleSheet(ui.layout.stylesheets.target_panel)
+
+	ui.layout.target_status_panel = Geyser.Label:new(ui.layout.cons.target_status_panel, ui.layout.target_panel)
+	ui.layout.target_status_panel:setStyleSheet(ui.layout.stylesheets.target_status_panel)
+
+	ui.layout.target_cast_panel = Geyser.Label:new(ui.layout.cons.target_cast_panel, ui.layout.target_panel)
+	ui.layout.target_cast_panel:setStyleSheet(ui.layout.stylesheets.target_cast_panel)
+
+	ui.layout.vitals_panel = Geyser.Label:new(ui.layout.cons.vitals_panel, ui.layout.left_window)
+	ui.layout.vitals_panel:setStyleSheet(ui.layout.stylesheets.vitals_panel)
+
+  --- right container ---
+
+  ui.layout.right_container = Geyser.Container:new(ui.layout.cons.right_container)
+
+  ui.layout.right_window = Geyser.Label:new(ui.layout.cons.right_window, ui.layout.right_container)
+  ui.layout.right_window:setStyleSheet(ui.layout.stylesheets.right_window)
+
+	ui.layout.map_panel = Geyser.Label:new(ui.layout.cons.map_panel, ui.layout.right_window)
+  ui.layout.map_panel:setStyleSheet(ui.layout.stylesheets.map_panel)
+
+	ui.layout.chat_panel = Geyser.Label:new(ui.layout.cons.chat_panel, ui.layout.right_window)
+  ui.layout.chat_panel:setStyleSheet(ui.layout.stylesheets.chat_panel)
+
+	ui.layout.popup_trigger_panel = Geyser.Label:new(ui.layout.cons.popup_trigger_panel, ui.layout.right_window)
+  ui.layout.popup_trigger_panel:setStyleSheet(ui.layout.stylesheets.popup_trigger_panel)
+
+	-- ui.layout.inventory_in_bags_panel = Geyser.Label:new(ui.layout.cons.inventory_in_bags_panel, ui.layout.inventory_panel)
+  -- ui.layout.inventory_in_bags_panel:setStyleSheet(ui.layout.stylesheets.inventory_in_bags_panel)
+
+  --- top container ---
+
+  ui.layout.top_container = Geyser.Container:new(ui.layout.cons.top_container)
+  ui.layout.top_window = Geyser.Label:new(ui.layout.cons.top_window, ui.layout.top_container)
+  ui.layout.top_window:setStyleSheet(ui.layout.stylesheets.top_window)
+
+  ui.layout.usable_items_panel = Geyser.Label:new(ui.layout.cons.usable_items_panel, ui.layout.top_window)
+  ui.layout.usable_items_panel:setStyleSheet(ui.layout.stylesheets.usable_items_panel)
+
+  -- ui.layout.skills_panel = Geyser.Label:new(ui.layout.cons.skills_panel, ui.layout.top_window)
+  -- ui.layout.skills_panel:setStyleSheet(ui.layout.stylesheets.skills_panel)
+
+  --- bottom container ---
+
+  ui.layout.bottom_container = Geyser.Container:new(ui.layout.cons.bottom_container)
+
+  ui.layout.bottom_window = Geyser.Label:new(ui.layout.cons.bottom_window, ui.layout.bottom_container)
+  ui.layout.bottom_window:setStyleSheet(ui.layout.stylesheets.bottom_window)
+
+
+	--
+	--
+	--
+
+  function ui.layout:set_main_borders()
+  	local w,h = getMainWindowSize()
+  	if( w ~= ui.layout.window_width) then
+  		ui.layout.window_width = w
+  		local cx = ui.layout.main_console_container:get_x()
+			local cw = ui.layout.main_console_container:get_width()
+			setBorderLeft(tonumber(cx) + 15) -- 15px left padding
+  		setBorderRight(tonumber(w-cx-cw))
+ 		end
+ 		if (h ~= ui.layout.window_height) then
+			ui.layout.window_height = h
+  		local cy = ui.layout.main_console_container:get_y()
+			local ch = ui.layout.main_console_container:get_height()
+			setBorderTop(tonumber(cy))
+			setBorderBottom(tonumber(h-cy-ch))
+  	end
+  end
+
+  -- sysWindowResizeEvent handler
+  function ui.layout:update_content( event, x, y )
+  	if( ui.eventtimer ) then killTimer( ui.eventtimer ) end
+  	ui.eventtimer = tempTimer(0, [[killTimer( 'ui.eventtimer' ) ui.layout:set_main_borders()]])
+  end
+
+  -- register our function as an event handler
+	ui.layout:set_main_borders()
+  registerAnonymousEventHandler('sysWindowResizeEvent', 'ui.layout:update_content')
+  ui.layout.is_loaded = true
+end
+</script>
+                    <eventHandlerList/>
+                </Script>
+            </ScriptGroup>
+            <ScriptGroup isActive="yes" isFolder="yes">
+                <name>YATCOConfig</name>
+                <packageName>YATCOConfig</packageName>
+                <script></script>
+                <eventHandlerList/>
+                <ScriptGroup isActive="yes" isFolder="yes">
+                    <name>YATCOCONFIG</name>
+                    <packageName></packageName>
+                    <script>demonnic = demonnic or {}
+demonnic.chat = demonnic.chat or {}
+demonnic.chat.config = demonnic.chat.config or {}</script>
+                    <eventHandlerList/>
+                    <Script isActive="yes" isFolder="no">
+                        <name>Configuration Options</name>
+                        <packageName></packageName>
+                        <script>
+--This is where you tell it to use tabbed chat.
+demonnic.chat.use = true
+
+--This is where you put what container to put the tabbed chat stuff into. 
+--demonnic.chat.useContainer = uiRight
+--demonnic.chat.useContainer = false 
+demonnic.chat.useContainer = ui.layout.chat_panel
+
+--see http://wiki.mudlet.org/w/Manual:Lua_Functions#getTime for format information
+--demonnic.chat.config.timestamp = false
+demonnic.chat.config.timestamp = &quot;HH:mm:ss&quot;
+
+-- This is largely irrelevant for how we're using YATCO.
+demonnic.chat.config.location = &quot;topright&quot;
+
+--Channel list. THIS IS KEY - CHANGING THIS WILL CHANGE YOUR TABS WITHIN YOUR CHAT WINDOW!
+demonnic.chat.config.channels = {
+  &quot;All&quot;,
+  &quot;Tells&quot;,
+  &quot;Guilds&quot;,
+  &quot;Other&quot;,
+  &quot;Party&quot;,
+}
+
+--Set this to the name of the channel you want to have everything sent to. 
+--Dont change this unless you change the equivalent channel name above.
+demonnic.chat.config.Alltab = &quot;All&quot;
+
+--You can use a tab for a map. We don't, but you need a 'map' tap in the channel config and reflect that below
+--demonnic.chat.config.Maptab = &quot;&quot;
+
+
+---------------------------------------------------------------------------------
+--                                                                             --
+--The infamous blinking stuff!!!                                               --
+--                                                                             --
+---------------------------------------------------------------------------------
+
+--Do you want tabs to blink when you get new messages, until you click on the tab? True if yes, false if no.
+demonnic.chat.config.blink = true
+
+--How long (in seconds) between blinks? For example, 1 would mean a 1 second pause in between blinks.
+demonnic.chat.config.blinkTime = 1
+
+--Blink if the bucket tab (&quot;All&quot; by default, but configured above) is in focus?
+demonnic.chat.config.blinkFromAll = false
+
+--Font size for the chat messages
+--Anything smaller than 10 is very hard to read
+demonnic.chat.config.fontSize = 10
+
+--Gag the chat lines in the main window? defaults to false, set to true if you want to gag.
+demonnic.chat.config.gag = true
+
+--Number of lines of chat visible at once. Will determine how tall the window for the chats is.
+-- ***We need to play with this to make it sit 'nicely' in the chat window***
+demonnic.chat.config.lines = 45
+
+--Number of characters to wrap the chatlines at. This will also determine how wide the chat windows are.
+-- ***We need to play with this to make it sit 'nicely' in the chat window***
+demonnic.chat.config.width = 30
+
+--Set the color for the active tab. R,G,B format. The default here is a brightish green
+demonnic.chat.config.activeColors = {
+  r = 0,
+  g = 180,
+  b = 0,
+}
+
+--Set the color for the inactive tab. R,G,B format. The default here is a drab grey
+demonnic.chat.config.inactiveColors = {
+  r = 60,
+  g = 60,
+  b = 60,
+}
+
+--Set the color for the chat window itself. R,G,B format. Defaulted to the black.
+demonnic.chat.config.windowColors = {
+  r = 0,
+  g = 0,
+  b = 0,
+}
+
+--[[Set the color for the text on the active tab. Uses color names.
+Set the default to purple. So the tab you're looking at, by default will be purple on bright green.]]
+demonnic.chat.config.activeTabText = &quot;purple&quot;
+
+--[[
+Set the color for the text on the inactive tabs. Uses color names.
+Defaulted this to white. So the tabs you're not looking at will be white text on boring grey background.
+]]
+demonnic.chat.config.inactiveTabText = &quot;white&quot;
+
+--[[
+have to make sure a currentTab is set... 
+so we'll use the one for the bucket, or the first one in the channels table
+Or, you know... what it's currently set to, if it's already set.
+]]
+demonnic.chat.currentTab = demonnic.chat.currentTab or demonnic.chat.config.Alltab or demonnic.chat.config.channels[1]
+</script>
+                        <eventHandlerList/>
+                    </Script>
+                </ScriptGroup>
+            </ScriptGroup>
+            <ScriptGroup isActive="yes" isFolder="yes">
+                <name>YATCO</name>
+                <packageName>YATCO</packageName>
+                <script></script>
+                <eventHandlerList/>
+                <ScriptGroup isActive="yes" isFolder="yes">
+                    <name>Demonnic</name>
+                    <packageName></packageName>
+                    <script></script>
+                    <eventHandlerList/>
+                    <ScriptGroup isActive="yes" isFolder="yes">
+                        <name>Shared</name>
+                        <packageName></packageName>
+                        <script>--Bootstrapping variables/etc. Don't touch this unless you really know what you're doing
+
+--I mean it. I'll point. AND laugh. loudly. 
+demonnic = demonnic or {}
+demonnic.config = demonnic.config or {}
+demonnic.balances = demonnic.balances or {}
+demonnic.balances.balance = demonnic.balances.balance or 1
+demonnic.balances.equilibrium = demonnic.balances.equilibrium or 1
+demonnic.debug = demonnic.debug or {}
+demonnic.debug.active = demonnic.debug.active or nil
+demonnic.debug.categories = demonnic.debug.categories or { }
+
+
+function demonnic:echo(msg)
+ cecho(string.format(&quot;\n&lt;blue&gt;(&lt;green&gt;Demonnic&lt;blue&gt;):&lt;white&gt; %s&quot;, msg))
+end</script>
+                        <eventHandlerList/>
+                        <Script isActive="yes" isFolder="no">
+                            <name>Debugging</name>
+                            <packageName></packageName>
+                            <script>--Adds debugging functionality 
+
+function demonnic:Debug(category,debugData)
+   if category then
+      if table.contains(demonnic.debug.categories, category) then
+         if type(debugData) == &quot;table&quot; then
+            demonnic:echo(&quot;&lt;red&gt;DEBUG &quot; .. category .. &quot;:&lt;white&gt;&quot;)
+            display(debugData)
+         elseif type(debugData) == &quot;string&quot; or type(debugData) == &quot;number&quot; then
+            demonnic:echo(&quot;&lt;red&gt;DEBUG &quot; .. category .. &quot;:&lt;white&gt; &quot; .. debugData .. &quot;\n&quot; )
+         else
+            demonnic:echo(&quot;&lt;red&gt;DEBUG &quot; .. category .. &quot;:&lt;white&gt; &quot; .. tostring(debugData) .. &quot;\n&quot; )
+         end
+      end
+   else
+      if type(debugData) == &quot;table&quot; then
+         demonnic:echo(&quot;&lt;red&gt;DEBUG:&lt;white&gt;&quot;)
+         display(debugData)
+      elseif type(debugData) == &quot;string&quot; or type(debugData) == &quot;number&quot; then
+         demonnic:echo(&quot;&lt;red&gt;DEBUG:&lt;white&gt; &quot; .. debugData)
+      else
+         demonnic:echo(&quot;&lt;red&gt;DEBUG:&lt;white&gt; &quot; .. tostring(debugData))
+      end
+   end
+end
+
+function demonnic:printDebug(category, debugData)
+   if not demonnic.debug.active then return end
+   demonnic:Debug(category, debugData)
+end
+
+function demonnic:toggleDebug()
+   if demonnic.debug.active then demonnic.debug.active = nil
+   else demonnic.debug.active = true
+   end
+   demonnic:echo(&quot;Debugging is currently &quot; .. (( demonnic.debug.active and &quot;&lt;green&gt;ON&lt;white&gt;&quot;) or &quot;&lt;red&gt;OFF&lt;white&gt;&quot;))
+end
+
+function demonnic:watchCategory( category )
+   if table.contains(demonnic.debug.categories, category) then
+      for i,v in ipairs(demonnic.debug.categories) do
+         if v == category then
+            table.remove(demonnic.debug.categories, i)
+         end
+      end
+      demonnic:echo(&quot;No longer watching the '&lt;red&gt;&quot;..category..&quot;&lt;white&gt;' category.&quot;) 
+   else
+      table.insert(demonnic.debug.categories, category)
+      demonnic:echo(&quot;Now watching the '&lt;red&gt;&quot;..category..&quot;&lt;white&gt;' category.&quot;)
+   end
+   demonnic:echo(&quot;Debugging is currently &quot; .. (( demonnic.debug.active and &quot;&lt;green&gt;ON&lt;white&gt;&quot;) or &quot;&lt;red&gt;OFF&lt;white&gt;&quot;))
+end
+
+function demonnic:listCategories()
+   if #demonnic.debug.categories &gt; 0 then
+      demonnic:echo(&quot;You are currently watching the following categories:\n&quot; .. table.concat(demonnic.debug.categories,&quot;, &quot;) )
+   else
+      demonnic:echo(&quot;You are not watching any debugs.&quot;)
+   end
+end
+</script>
+                            <eventHandlerList/>
+                        </Script>
+                        <Script isActive="yes" isFolder="no">
+                            <name>Geyser Additions</name>
+                            <packageName></packageName>
+                            <script>function Geyser.MiniConsole:clear()
+   clearWindow(self.name)
+end
+
+function Geyser.MiniConsole:append()
+  appendBuffer(self.name)
+end</script>
+                            <eventHandlerList/>
+                        </Script>
+                    </ScriptGroup>
+                    <ScriptGroup isActive="yes" isFolder="yes">
+                        <name>Tabbed Chat</name>
+                        <packageName></packageName>
+                        <script>--Do not remove the following lines. Or change them.
+demonnic = demonnic or {}
+demonnic.chat = demonnic.chat or {}
+demonnic.chat.tabsToBlink = demonnic.chat.tabsToBlink or {}
+demonnic.chat.tabs = demonnic.chat.tabs or {}
+demonnic.chat.windows = demonnic.chat.windows or {}
+if not demonnic.chat.config then
+  cecho(&quot;&lt;red:white&gt;YOU DO NOT HAVE THE YATCO CONFIG PACKAGE IN PLACE. THINGS WILL NOT WORK AS EXPECTED\n\n&quot;)
+  demonnic.chat.error = &quot;NO CONFIG&quot;
+end</script>
+                        <eventHandlerList/>
+                        <Script isActive="yes" isFolder="no">
+                            <name>Code</name>
+                            <packageName></packageName>
+                            <script>--[[
+If the label callbacks ever decide to start taking a function which is part of a table, 0then this will change.
+Or if it's modified to take actual functions. Anonymouse function clickcallback would be awfully nice.
+]]
+
+function demonnicChatSwitch(chat)
+  local r = demonnic.chat.config.inactiveColors.r
+  local g = demonnic.chat.config.inactiveColors.g
+  local b = demonnic.chat.config.inactiveColors.b
+  local newr = demonnic.chat.config.activeColors.r
+  local newg = demonnic.chat.config.activeColors.g
+  local newb = demonnic.chat.config.activeColors.b
+  local oldchat = demonnic.chat.currentTab
+  if demonnic.chat.currentTab ~= chat then
+    demonnic.chat.windows[oldchat]:hide()
+    demonnic.chat.tabs[oldchat]:setColor(r,g,b)
+    demonnic.chat.tabs[oldchat]:echo(oldchat, demonnic.chat.config.inactiveTabText, &quot;c&quot;)
+    if demonnic.chat.config.blink and demonnic.chat.tabsToBlink[chat] then
+      demonnic.chat.tabsToBlink[chat] = nil
+    end
+    if demonnic.chat.config.blink and chat == demonnic.chat.config.Alltab then
+      demonnic.chat.tabsToBlink = {}
+    end
+  end
+  demonnic.chat.tabs[chat]:setColor(newr,newg,newb)
+  demonnic.chat.tabs[chat]:echo(chat, demonnic.chat.config.activeTabText, &quot;c&quot;)
+  demonnic.chat.windows[chat]:show()
+  demonnic.chat.currentTab = chat  
+end
+
+function demonnic.chat:resetUI()
+  demonnic.chat.container = demonnic.chat.useContainer or Geyser.Container:new(demonnic.chat[demonnic.chat.config.location]())
+  demonnic.chat.tabBox = Geyser.HBox:new({
+    x=0,
+    y=0,
+    width = &quot;100%&quot;,
+    height = &quot;25px&quot;,
+    name = &quot;DemonChatTabs&quot;,
+  },demonnic.chat.container)
+
+end
+
+function demonnic.chat:create()
+  --reset the UI
+  demonnic.chat:resetUI()
+  --Set some variables locally to increase readability
+  local r = demonnic.chat.config.inactiveColors.r
+  local g = demonnic.chat.config.inactiveColors.g
+  local b = demonnic.chat.config.inactiveColors.b
+  local winr = demonnic.chat.config.windowColors.r
+  local wing = demonnic.chat.config.windowColors.g
+  local winb = demonnic.chat.config.windowColors.b
+
+  --iterate the table of channels and create some windows and tabs
+  for i,tab in ipairs(demonnic.chat.config.channels) do
+    demonnic.chat.tabs[tab] = Geyser.Label:new({
+      name=string.format(&quot;tab%s&quot;, tab),
+    }, demonnic.chat.tabBox)
+    demonnic.chat.tabs[tab]:echo(tab, demonnic.chat.config.inactiveTabText, &quot;c&quot;)
+    demonnic.chat.tabs[tab]:setColor(r,g,b)
+    demonnic.chat.tabs[tab]:setClickCallback(&quot;demonnicChatSwitch&quot;, tab)
+    demonnic.chat.windows[tab] = Geyser.MiniConsole:new({
+--      fontSize = demonnic.chat.config.fontSize,
+      x = 0,
+      y = 25,
+      height = &quot;100%&quot;,
+      width = &quot;100%&quot;,
+      name = string.format(&quot;win%s&quot;, tab),
+    }, demonnic.chat.container)
+    demonnic.chat.windows[tab]:setFontSize(demonnic.chat.config.fontSize)
+    demonnic.chat.windows[tab]:setColor(winr,wing,winb)
+    demonnic.chat.windows[tab]:setWrap(demonnic.chat.config.width)
+    demonnic.chat.windows[tab]:hide()
+  end
+  if demonnic.chat.config.Maptab and demonnic.chat.config.Maptab ~= &quot;&quot; then
+    demonnic.chat.mapWindow = Geyser.Mapper:new({
+      x = 0,
+      y = 0,
+      height = &quot;100%&quot;,
+      width = &quot;100%&quot;,
+    }, demonnic.chat.windows[demonnic.chat.config.Maptab])
+    demonnic.chat.windows[demonnic.chat.config.Maptab]:hide()
+  end
+  local showme = demonnic.chat.config.Alltab or demonnic.chat.config.channels[1]
+  demonnicChatSwitch(showme)
+  --start the blink timers, if enabled
+  if demonnic.chat.config.blink and not demonnic.chat.blinkTimerOn then
+    demonnic.chat:blink()
+  end
+end
+
+function demonnic.chat:append(chat)
+  local r = demonnic.chat.config.windowColors.r
+  local g = demonnic.chat.config.windowColors.g
+  local b = demonnic.chat.config.windowColors.b
+  selectCurrentLine()
+  local ofr,ofg,ofb = getFgColor()
+  local obr,obg,obb = getBgColor()
+  if demonnic.chat.config.preserveBackground then
+    setBgColor(r,g,b)
+  end
+  copy()
+  if demonnic.chat.config.timestamp then
+    local timestamp = getTime(true, demonnic.chat.config.timestamp)
+    local tsfg = {}
+    local tsbg = {}
+    local colorLeader = &quot;&quot;
+    if demonnic.chat.config.timestampCustomColor then
+      if type(demonnic.chat.config.timestampFG) == &quot;string&quot; then
+        tsfg = color_table[demonnic.chat.config.timestampFG]
+      else
+        tsfg = demonnic.chat.config.timestampFG
+      end
+      if type(demonnic.chat.config.timestampBG) == &quot;string&quot; then
+        tsbg = color_table[demonnic.chat.config.timestampBG]
+      else
+        tsbg = demonnic.chat.config.timestampBG
+      end
+      colorLeader = string.format(&quot;&lt;%s,%s,%s:%s,%s,%s&gt;&quot;,tsfg[1],tsfg[2],tsfg[3],tsbg[1],tsbg[2],tsbg[3])
+    else
+      colorLeader = string.format(&quot;&lt;%s,%s,%s:%s,%s,%s&gt;&quot;,ofr,ofg,ofb,obr,obg,obb)
+    end
+    local fullstamp = string.format(&quot;%s%s&quot;,colorLeader,timestamp)
+      demonnic.chat.windows[chat]:decho(fullstamp)
+      demonnic.chat.windows[chat]:echo(&quot; &quot;)
+      if demonnic.chat.config.Alltab then 
+        demonnic.chat.windows[demonnic.chat.config.Alltab]:decho(fullstamp)
+        demonnic.chat.windows[demonnic.chat.config.Alltab]:echo(&quot; &quot;)
+      end
+  end
+  demonnic.chat.windows[chat]:append()
+  if demonnic.chat.config.gag then 
+    deleteLine() 
+    tempLineTrigger(1,1, [[if isPrompt() then deleteLine() end]])
+  end
+  if demonnic.chat.config.Alltab then appendBuffer(string.format(&quot;win%s&quot;, demonnic.chat.config.Alltab)) end
+  if demonnic.chat.config.blink and chat ~= demonnic.chat.currentTab then 
+    if (demonnic.chat.config.Alltab == demonnic.chat.currentTab) and not demonnic.chat.config.blinkOnAll then
+      return
+    else
+      demonnic.chat.tabsToBlink[chat] = true
+    end
+  end
+end
+
+
+
+function demonnic.chat:blink()
+  if demonnic.chat.blinkID then killTimer(demonnic.chat.blinkID) end
+  if not demonnic.chat.config.blink then 
+    demonnic.chat.blinkTimerOn = false
+    return 
+  end
+  if not demonnic.chat.container.hidden then
+    for tab,_ in pairs(demonnic.chat.tabsToBlink) do
+      demonnic.chat.tabs[tab]:flash()
+    end
+  end
+  demonnic.chat.blinkID = tempTimer(demonnic.chat.config.blinkTime, function () demonnic.chat:blink() end)
+end
+
+function demonnic.chat:topright()
+  return {
+    fontSize = demonnic.chat.config.fontSize,
+    x=string.format(&quot;-%sc&quot;,demonnic.chat.config.width + 2),
+    y=0,
+    width=&quot;-15px&quot;,
+    height=string.format(&quot;%ic&quot;, demonnic.chat.config.lines + 2),
+  }
+end
+
+function demonnic.chat:topleft()
+  return {
+    fontSize = demonnic.chat.config.fontSize,
+    x=0,
+    y=0,
+    width=string.format(&quot;%sc&quot;,demonnic.chat.config.width),
+    height=string.format(&quot;%ic&quot;, demonnic.chat.config.lines + 2),
+  }
+end
+
+function demonnic.chat:bottomright()
+  return {
+    fontSize = demonnic.chat.config.fontSize,
+    x=string.format(&quot;-%sc&quot;,demonnic.chat.config.width + 2),
+    y=string.format(&quot;-%sc&quot;,demonnic.chat.config.lines + 2),
+    width=&quot;-15px&quot;,
+    height=string.format(&quot;%ic&quot;, demonnic.chat.config.lines + 2),
+  }
+end
+
+function demonnic.chat:bottomleft()
+  return {
+    fontSize = demonnic.chat.config.fontSize,
+    x=0,
+    y=string.format(&quot;-%sc&quot;,demonnic.chat.config.lines + 2),
+    width=string.format(&quot;%sc&quot;,demonnic.chat.config.width),
+    height=string.format(&quot;%ic&quot;, demonnic.chat.config.lines + 2),
+  }
+end</script>
+                            <eventHandlerList/>
+                        </Script>
+                        <Script isActive="yes" isFolder="no">
+                            <name>demonnicOnStart</name>
+                            <packageName></packageName>
+                            <script>function demonnicOnStart()
+  if demonnic.chat.use then
+    demonnic.chat:create()
+  end
+end</script>
+                            <eventHandlerList>
+                                <string>sysLoadEvent</string>
+                            </eventHandlerList>
+                        </Script>
+                        <Script isActive="yes" isFolder="no">
+                            <name>echo functions</name>
+                            <packageName></packageName>
+                            <script>
+function demonnic.chat:cecho(chat, message)
+  local alltab = demonnic.chat.config.Alltab
+  local blink = demonnic.chat.config.blink
+  cecho(string.format(&quot;win%s&quot;,chat), message)
+  if alltab and chat ~= alltab then 
+    cecho(string.format(&quot;win%s&quot;, alltab), message)
+  end
+  if blink and chat ~= demonnic.chat.currentTab then
+    if (alltab == demonnic.chat.currentTab) and not demonnic.chat.config.blinkOnAll then
+      return
+    else
+      demonnic.chat.tabsToBlink[chat] = true
+    end
+  end
+end
+
+function demonnic.chat:decho(chat, message)
+  local alltab = demonnic.chat.config.Alltab
+  local blink = demonnic.chat.config.blink
+  decho(string.format(&quot;win%s&quot;,chat), message)
+  if alltab and chat ~= alltab then 
+    decho(string.format(&quot;win%s&quot;, alltab), message)
+  end
+  if blink and chat ~= demonnic.chat.currentTab then
+    if (alltab == demonnic.chat.currentTab) and not demonnic.chat.config.blinkOnAll then
+      return
+    else
+      demonnic.chat.tabsToBlink[chat] = true
+    end
+  end
+end
+
+function demonnic.chat:hecho(chat, message)
+  local alltab = demonnic.chat.config.Alltab
+  local blink = demonnic.chat.config.blink
+  hecho(string.format(&quot;win%s&quot;,chat), message)
+  if alltab and chat ~= alltab then 
+    hecho(string.format(&quot;win%s&quot;, alltab), message)
+  end
+  if blink and chat ~= demonnic.chat.currentTab then
+    if (alltab == demonnic.chat.currentTab) and not demonnic.chat.config.blinkOnAll then
+      return
+    else
+      demonnic.chat.tabsToBlink[chat] = true
+    end
+  end
+end
+
+function demonnic.chat:echo(chat, message)
+  local alltab = demonnic.chat.config.Alltab
+  local blink = demonnic.chat.config.blink
+  echo(string.format(&quot;win%s&quot;,chat), message)
+  if alltab and chat ~= alltab then 
+    echo(string.format(&quot;win%s&quot;, alltab), message)
+  end
+  if blink and chat ~= demonnic.chat.currentTab then
+    if (alltab == demonnic.chat.currentTab) and not demonnic.chat.config.blinkOnAll then
+      return
+    else
+      demonnic.chat.tabsToBlink[chat] = true
+    end
+  end
+end</script>
+                            <eventHandlerList/>
+                        </Script>
+                    </ScriptGroup>
+                </ScriptGroup>
+            </ScriptGroup>
+        </ScriptGroup>
+    </ScriptPackage>
+</MudletPackage>
